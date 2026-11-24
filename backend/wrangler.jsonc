@@ -6,7 +6,7 @@
   "workers_dev": true,
   "vars": {
     "RANKED_ENABLED": "true",
-    "ALLOWED_ORIGINS": "https://ikempty.github.io,http://127.0.0.1:4173,http://localhost:4173"
+    "ALLOWED_ORIGINS": "https://1234reversi.com,https://www.1234reversi.com,https://ikempty.github.io,http://127.0.0.1:4173,http://localhost:4173"
   },
   "durable_objects": {
     "bindings": [{"name": "RANKED", "class_name": "RankedLobby"}]

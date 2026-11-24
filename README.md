@@ -14,7 +14,9 @@
 
 ## 起動
 
-公開先: https://ikempty.github.io/1234-reversi/
+公開先: https://1234reversi.com/ （DNS接続とHTTPS証明書の設定が必要）
+
+Cloudflare DNSで `@` と `www` のCNAMEを `ikempty.github.io` に設定し、プロキシはDNS onlyにします。GitHub PagesのCustom domainは `1234reversi.com`、証明書の発行後にEnforce HTTPSを有効にします。ドメインを変更するとブラウザの保存領域も変わるため、旧URLの匿名ID・レートは自動では引き継がれません。
 
 GitHub Pagesは `main` ブランチの `docs/` を公開します。画面のコードを変更したら `npm run build:pages` で公開ファイルを更新し、ソースと一緒にコミット・プッシュしてください。
 
