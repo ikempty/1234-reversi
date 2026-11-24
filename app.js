@@ -103,6 +103,9 @@ function render(){
     $(color+'-count').textContent=counts[p];$(color+'-stock').textContent=state.stock[p];
     $(color+'-score').classList.toggle('active',!state.over&&state.current===p&&(mode==='cpu'||!!online?.match));
     $(color+'-name').textContent=mode==='cpu'?(p===1?'あなた':`CPU Lv.${level}`):(online?.match?.[color]?.nickname||names[p]);
+    const rating=mode==='online'?online?.match?.[color]?.rating:null;
+    $(color+'-rating').hidden=rating==null;
+    $(color+'-rating').textContent=rating==null?'':`レート ${rating}`;
   }
   $('move-count').textContent=(mode==='cpu'||online?.match)?`${state.moves}${state.over?'手で終了':'手'}`:'';
   $('pass').textContent=state.last?.passed&&!state.over?`${names[state.last.passed]}はパス`:'';
@@ -113,13 +116,16 @@ function render(){
     button.setAttribute('aria-pressed',String(!!filled));button.disabled=!canInteract();
   }
   $('undo').hidden=mode!=='cpu';$('undo').disabled=!history.length;
+  $('resign').hidden=screen!=='game'||!onlineActive();
+  $('resign').disabled=!ranked.ready||connecting||pending;
   $('restart').hidden=screen!=='game'||mode!=='cpu';
   $('match').disabled=!configured||connecting;
-  $('match').hidden=!configured||connecting||!!(ranked.ready&&online?.queued);
-  $('match').textContent=!ranked.ready&&online?.match?'再接続':onlineActive()?'投了':screen==='game'?'もう一度対戦':'再試行';
+  $('match').hidden=!configured||connecting||!!(ranked.ready&&(online?.queued||onlineActive()));
+  $('match').textContent=!ranked.ready&&online?.match?'再接続':screen==='game'?'もう一度対戦':'再試行';
   $('nickname').disabled=connecting||!!online?.queued||!!onlineActive();
   $('leaderboard-toggle').disabled=!ranked.ready;
   const delta=online?.match?.delta;
+  $('rating').hidden=screen==='game'&&!state.over;
   $('rating').textContent=online?.profile?`レート ${online.profile.rating}${delta!=null?` (${delta>=0?'+':''}${delta})`:''}`:'レート —';
   renderTurn();renderBoard();renderPlacement();
 }
@@ -235,8 +241,12 @@ async function startMatching(){
 }
 $('match').addEventListener('click',()=>{
   if(!configured||connecting)return;
-  if(onlineActive()&&ranked.ready){if(confirm('投了しますか？ レートが更新されます。'))ranked.send({type:'resign',matchId:online.match.id});return;}
+  if(onlineActive()&&ranked.ready)return;
   startMatching();
+});
+$('resign').addEventListener('click',()=>{
+  if(screen!=='game'||!onlineActive()||!ranked.ready||connecting||pending)return;
+  if(confirm('投了しますか？ レートが更新されます。'))ranked.send({type:'resign',matchId:online.match.id});
 });
 $('leaderboard-toggle').addEventListener('click',()=>{
   $('leaderboard').hidden=!$('leaderboard').hidden;

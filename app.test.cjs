@@ -16,7 +16,7 @@ function setup({configured=false,profile=null,rankings={players:[]}}={}){
     constructor(url,onEvent){this.ready=false;this.onEvent=onEvent;this.connections=[];this.closed=false;clients.push(this);}
     close(){this.closed=true;this.ready=false;}
     async connect(name,options){assert.ok(configured);this.closed=false;this.connections.push({name,options});}
-    send(){assert.ok(configured);return this.ready;}
+    send(message){assert.ok(configured);this.lastMessage=message;return this.ready;}
     queue(){return this.send();}
     async getProfile(){return typeof profile==='function'?profile():profile;}
     async getRankings(){return typeof rankings==='function'?rankings():rankings;}
@@ -109,9 +109,15 @@ test('random match starts connecting from TOP and shows the board only when matc
   client.emit({type:'connection',ready:true});
   client.emit({type:'snapshot',profile:{rating:1500},queued:true,match:null,serverTime:Date.now()});
   assert.equal(ui.byId('game-screen').hidden,true);
-  client.emit({type:'snapshot',profile:{rating:1500},queued:false,match:{id:'match',state:game.initialState(),color:1,black:{nickname:'Player'},white:{nickname:'Opponent'},deadline:Date.now()+120000},serverTime:Date.now()});
+  client.emit({type:'snapshot',profile:{rating:1500},queued:false,match:{id:'match',state:game.initialState(),color:1,black:{nickname:'Player',rating:1500},white:{nickname:'Opponent',rating:1632},deadline:Date.now()+120000},serverTime:Date.now()});
   assert.equal(ui.byId('game-screen').hidden,false);assert.equal(ui.byId('matching-view').hidden,true);
   assert.equal(ui.byId('back-top').disabled,true);assert.equal(ui.byId('board').children[19].disabled,false);
+  assert.equal(ui.byId('black-rating').textContent,'レート 1500');assert.equal(ui.byId('white-rating').textContent,'レート 1632');
+  assert.equal(ui.byId('rating').hidden,true);assert.equal(ui.byId('match').hidden,true);
+  assert.equal(ui.byId('resign').hidden,false);ui.click(ui.byId('resign'));
+  assert.equal(client.lastMessage.type,'resign');assert.equal(client.lastMessage.matchId,'match');
+  client.emit({type:'connection',ready:false});
+  assert.equal(ui.byId('resign').disabled,true);assert.equal(ui.byId('match').hidden,false);assert.equal(ui.byId('match').textContent,'再接続');
 });
 test('cancel during matchmaking disconnects and keeps late events off TOP',()=>{
   const ui=setup({configured:true});ui.click(ui.byId('mode-online'));const client=ui.clients[0];

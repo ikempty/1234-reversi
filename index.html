@@ -38,13 +38,13 @@
     </section>
     <div id="game-screen" hidden>
     <section aria-label="リバーシ盤面">
-      <div class="scores"><div id="black-score" class="score"><i class="disc black"></i><div><span id="black-name">あなた</span><strong id="black-count">2</strong><small>残り <b id="black-stock">30</b></small></div></div><div id="turn" class="turn" aria-live="polite" tabindex="-1"></div><div id="white-score" class="score"><i class="disc white"></i><div><span id="white-name">CPU</span><strong id="white-count">2</strong><small>残り <b id="white-stock">30</b></small></div></div></div>
+      <div class="scores"><div id="black-score" class="score"><i class="disc black"></i><div><span id="black-name">あなた</span><small id="black-rating" class="player-rating" hidden></small><strong id="black-count">2</strong><small>残り <b id="black-stock">30</b></small></div></div><div id="turn" class="turn" aria-live="polite" tabindex="-1"></div><div id="white-score" class="score"><i class="disc white"></i><div><span id="white-name">CPU</span><small id="white-rating" class="player-rating" hidden></small><strong id="white-count">2</strong><small>残り <b id="white-stock">30</b></small></div></div></div>
       <div class="board-wrap"><div id="board" class="board" aria-label="8×8の盤面"></div></div>
       <div class="board-footer"><span id="pass" role="status"></span><span id="move-count"></span></div>
     </section>
     <section class="workbench" aria-label="駒の合体と配置">
       <div id="builder" class="builder" aria-label="2×2の合体スペース"></div>
-      <div class="actions"><button id="place" class="primary" disabled>置く</button><button id="undo" class="quiet" disabled>戻す</button></div>
+      <div class="actions"><button id="place" class="primary" disabled>置く</button><button id="resign" class="quiet" hidden>投了</button><button id="undo" class="quiet" disabled>戻す</button></div>
     </section>
     <p id="status" class="notice" role="status" hidden></p>
     </div>
