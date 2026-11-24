@@ -124,6 +124,8 @@ function render(){
   $('match').textContent=!ranked.ready&&online?.match?'再接続':screen==='game'?'もう一度対戦':'再試行';
   $('nickname').disabled=connecting||!!online?.queued||!!onlineActive();
   $('leaderboard-toggle').disabled=!ranked.ready;
+  $('leaderboard-toggle').hidden=screen==='game';
+  if(screen==='game')$('leaderboard').hidden=true;
   const delta=online?.match?.delta;
   $('rating').hidden=screen==='game'&&!state.over;
   $('rating').textContent=online?.profile?`レート ${online.profile.rating}${delta!=null?` (${delta>=0?'+':''}${delta})`:''}`:'レート —';
@@ -249,6 +251,7 @@ $('resign').addEventListener('click',()=>{
   if(confirm('投了しますか？ レートが更新されます。'))ranked.send({type:'resign',matchId:online.match.id});
 });
 $('leaderboard-toggle').addEventListener('click',()=>{
+  if(screen==='game')return;
   $('leaderboard').hidden=!$('leaderboard').hidden;
   if(!$('leaderboard').hidden)ranked.send({type:'ranking'});
 });
