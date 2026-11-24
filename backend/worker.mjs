@@ -13,7 +13,7 @@ export default {
     if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
     if(env.RANKED_ENABLED!=='true')return json({error:'オンライン対戦は準備中です。'},503,headers);
     const url=new URL(request.url);
-    if(!['/session','/connect'].includes(url.pathname))return json({error:'Not found'},404,headers);
+    if(!['/session','/connect','/profile','/ranking'].includes(url.pathname))return json({error:'Not found'},404,headers);
     if(Number(request.headers.get('Content-Length'))>2048)return json({error:'リクエストが大きすぎます。'},413,headers);
     try{
       const response=await env.RANKED.getByName('ranked-v1').fetch(request);
@@ -37,11 +37,18 @@ export class RankedLobby extends DurableObject {
   async schedule(){const deadline=this.store.nextDeadline();if(deadline)await this.ctx.storage.setAlarm(Math.max(Date.now()+100,deadline));else await this.ctx.storage.deleteAlarm();}
   async fetch(request){
     const url=new URL(request.url);
+    if(url.pathname==='/ranking'&&request.method==='GET')return json({players:this.store.rankings()});
     const protocol=request.headers.get('Sec-WebSocket-Protocol')||'';
     const token=url.pathname==='/connect'?protocol.replace(/^auth\./,''):(request.headers.get('Authorization')||'').replace(/^Bearer /,'');
     if(!/^[a-f0-9]{64}$/.test(token))return json({error:'認証情報が不正です。'},401);
     const hash=await digest(token);
     try{
+      if(url.pathname==='/profile'&&request.method==='GET'){
+        const player=this.store.authenticate(hash);
+        if(!player)return json({error:'プレイヤー情報が見つかりません。'},404);
+        const {rating,wins,losses,draws}=player;
+        return json({rating,wins,losses,draws});
+      }
       if(url.pathname==='/session'&&request.method==='POST'){
         const raw=await request.text();if(raw.length>2048)return json({error:'リクエストが大きすぎます。'},413);
         const data=JSON.parse(raw);

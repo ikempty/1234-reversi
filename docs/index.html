@@ -17,10 +17,17 @@
     <section id="top-screen" class="menu-screen" aria-label="TOP画面">
       <div class="mode-choices"><button id="mode-cpu">CPU対戦</button><button id="mode-online">ランダムマッチ</button></div>
       <input id="nickname" class="nickname" aria-label="ランダムマッチのニックネーム" placeholder="ニックネーム" maxlength="16" autocomplete="nickname">
+      <div class="top-meta"><span id="top-rating" aria-live="polite">レート —</span><button id="top-ranking" class="quiet">ランキング</button></div>
     </section>
     <section id="level-screen" class="menu-screen" aria-labelledby="level-title" hidden>
       <h2 id="level-title" tabindex="-1">CPUレベル</h2>
       <div id="level-choices" class="level-choices" aria-label="レベル1〜10"></div>
+    </section>
+    <section id="ranking-screen" hidden aria-labelledby="ranking-title">
+      <h2 id="ranking-title" tabindex="-1">ランキング</h2>
+      <p id="ranking-status" class="notice" role="status"></p>
+      <ol id="top-leaderboard" class="ranking-list" aria-label="ランキング"></ol>
+      <button id="ranking-retry" class="quiet" hidden>再読み込み</button>
     </section>
     <section id="online-options" hidden aria-label="ランダムマッチ">
       <div id="matching-view" class="matching-view"><h2 id="matching-title" tabindex="-1">マッチング</h2><div id="matching-spinner" class="spinner" aria-hidden="true" hidden></div></div>

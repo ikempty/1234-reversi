@@ -37,6 +37,9 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
   }
   try{
     const denied=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{Origin:'https://untrusted.example'},body:'{}'});assert.equal(denied.status,403);
+    const empty=await mf.dispatchFetch('http://localhost/ranking',{headers});
+    assert.equal(empty.status,200);assert.deepEqual(await empty.json(),{players:[]});
+    const unauthenticated=await mf.dispatchFetch('http://localhost/profile',{headers});assert.equal(unauthenticated.status,401);
     const a=await connect('a'.repeat(64),'Network A'),b=await connect('b'.repeat(64),'Network B');
     a.send({type:'queue'});await a.next(m=>m.type==='snapshot'&&m.queued);
     b.send({type:'queue'});
@@ -56,5 +59,11 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
     reconnected.send({type:'resign',matchId:sa.match.id});
     reconnected.send({type:'ranking'});
     const rankings=await reconnected.next(m=>m.type==='ranking');assert.equal(rankings.players[0].rating,1512);
+    const profile=await mf.dispatchFetch('http://localhost/profile',{headers:{...headers,Authorization:'Bearer '+'a'.repeat(64)}});
+    assert.equal(profile.status,200);assert.deepEqual(await profile.json(),{rating:1488,wins:0,losses:1,draws:0});
+    const publicRanking=await mf.dispatchFetch('http://localhost/ranking',{headers});
+    assert.deepEqual((await publicRanking.json()).players,rankings.players);
+    const readOnly=await mf.dispatchFetch('http://localhost/profile',{headers:{...headers,Authorization:'Bearer '+'c'.repeat(64)}});
+    assert.equal(readOnly.status,404);
   }finally{for(const socket of sockets)try{socket.close(1000);}catch{}await mf.dispose();}
 });

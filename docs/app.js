@@ -5,6 +5,7 @@ const names={1:'黒',2:'白'};
 let state=game.initialState(),shape=[[0,0]],selected=null,hover=null,history=[],legal=[];
 let screen='top',mode=null,level=3,thinking=false,worker=null,cpuTimer=null,job=0;
 let navigation=0;
+let profileRequest=0;
 let online=null,connecting=false,pending=false,serverOffset=0,pendingTimer=null;
 const configured=!!window.REVERSI_ONLINE_URL;
 const ranked=new RankedClient(window.REVERSI_ONLINE_URL||'',onOnline);
@@ -87,6 +88,8 @@ function render(){
   $('app').classList.toggle('menu-view',screen!=='game');
   $('top-screen').hidden=screen!=='top';
   $('level-screen').hidden=screen!=='levels';
+  $('ranking-screen').hidden=screen!=='ranking';
+  $('top-ranking').disabled=!configured;
   $('game-screen').hidden=screen!=='game';
   $('online-options').hidden=mode!=='online';
   $('matching-view').hidden=screen!=='matching';
@@ -182,7 +185,39 @@ $('back-top').addEventListener('click',()=>{
   if(screen==='game'&&mode==='cpu'&&state.moves&&!state.over&&!confirm('CPU対戦を終了してTOPへ戻りますか？'))return;
   navigation++;stopCPU();ranked.close();online=null;connecting=false;pending=false;clearTimeout(pendingTimer);
   mode=null;screen='top';$('leaderboard').hidden=true;$('online-status').textContent='';newGame();$('mode-cpu').focus();
+  refreshTopProfile();
 });
+async function refreshTopProfile(){
+  const request=++profileRequest;
+  if(!configured){$('top-rating').textContent='レート —';return;}
+  $('top-rating').textContent='レート 確認中…';
+  try{
+    const profile=await ranked.getProfile();
+    if(request===profileRequest)$('top-rating').textContent=`レート ${profile?.rating??1500}`;
+  }catch{if(request===profileRequest)$('top-rating').textContent='レート 取得できません';}
+}
+function showRankings(list,players){
+  list.replaceChildren();
+  for(const player of players){const li=document.createElement('li'),rating=document.createElement('span');li.textContent=player.nickname;rating.textContent=String(player.rating);li.append(rating);list.append(li);}
+  if(!players.length){const li=document.createElement('li');li.textContent='まだ対戦記録がありません。';list.append(li);}
+}
+async function loadTopRankings(){
+  const attempt=++navigation;
+  $('top-leaderboard').replaceChildren();$('ranking-status').textContent='読み込み中…';$('ranking-retry').hidden=true;
+  try{
+    const data=await ranked.getRankings();
+    if(attempt!==navigation||screen!=='ranking')return;
+    showRankings($('top-leaderboard'),data.players);$('ranking-status').textContent='';
+  }catch{
+    if(attempt!==navigation||screen!=='ranking')return;
+    $('ranking-status').textContent='ランキングを読み込めませんでした。';$('ranking-retry').hidden=false;
+  }
+}
+$('top-ranking').addEventListener('click',()=>{
+  if(screen!=='top'||!configured)return;
+  mode=null;screen='ranking';render();$('ranking-title').focus();loadTopRankings();
+});
+$('ranking-retry').addEventListener('click',()=>{if(screen==='ranking')loadTopRankings();});
 async function startMatching(){
   if(mode!=='online'||connecting)return;
   if(!configured){$('online-status').textContent='オンライン対戦は準備中です。';render();return;}
@@ -214,6 +249,7 @@ function onOnline(event){
     $('online-status').textContent=event.message;
     if(!event.ready){pending=false;clearTimeout(pendingTimer);}
   }else if(event.type==='snapshot'){
+    profileRequest++;$('top-rating').textContent=`レート ${event.profile.rating}`;
     online=event;serverOffset=event.serverTime-Date.now();pending=false;clearTimeout(pendingTimer);
     connecting=false;
     if(event.match&&!event.queued&&(!event.match.state.over||screen==='game'))screen='game';
@@ -223,9 +259,7 @@ function onOnline(event){
   }else if(event.type==='error'){
     pending=false;clearTimeout(pendingTimer);$('online-status').textContent=event.message;
   }else if(event.type==='ranking'){
-    $('leaderboard').replaceChildren();
-    for(const player of event.players){const li=document.createElement('li'),rating=document.createElement('span');li.textContent=player.nickname;rating.textContent=String(player.rating);li.append(rating);$('leaderboard').append(li);}
-    if(!event.players.length){const li=document.createElement('li');li.textContent='まだ対戦記録がありません。';$('leaderboard').append(li);}
+    showRankings($('leaderboard'),event.players);
   }
   render();
 }
@@ -233,3 +267,4 @@ try{$('nickname').value=localStorage.getItem('1234-nickname')||'';}catch{}
 setInterval(()=>{if(onlineActive())renderTurn();},500);
 window.addEventListener('beforeunload',event=>{if(onlineActive()){event.preventDefault();event.returnValue='';}});
 render();
+refreshTopProfile();

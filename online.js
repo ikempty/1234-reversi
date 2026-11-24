@@ -2,6 +2,19 @@
   'use strict';
   class RankedClient {
     constructor(url,onEvent){this.url=url.replace(/\/$/,'');this.onEvent=onEvent;this.socket=null;this.ready=false;this.closed=true;this.retry=0;this.wantsQueue=false;this.attempt=0;}
+    async read(path,headers={}){
+      if(!this.url)throw new Error('オンライン対戦は準備中です。');
+      const response=await fetch(this.url+path,{headers,cache:'no-store',signal:AbortSignal.timeout(12000)});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'読み込めませんでした。');
+      return data;
+    }
+    async getProfile(){
+      const token=localStorage.getItem('1234-player-token');
+      if(!/^[a-f0-9]{64}$/.test(token||''))return null;
+      return this.read('/profile',{Authorization:'Bearer '+token});
+    }
+    getRankings(){return this.read('/ranking');}
     async connect(nickname,{queue=false}={}){
       if(!this.url)throw new Error('オンライン対戦は準備中です。');
       if(!nickname.trim()||[...nickname.trim()].length>16)throw new Error('ニックネームは1〜16文字で入力してください。');

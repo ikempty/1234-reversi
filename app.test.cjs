@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const game=require('./engine.js');
 const ai=require('./ai.js');
-function setup({configured=false}={}){
+function setup({configured=false,profile=null,rankings={players:[]}}={}){
   const nodes=new Map(),timers=new Map(),workers=[],clients=[];let timerId=0;
   function element(){return {children:[],events:{},textContent:'',value:'',hidden:false,disabled:false,classList:{toggle(){}},focus(){},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
   const document={getElementById(id){if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);},createElement:element};
@@ -18,6 +18,8 @@ function setup({configured=false}={}){
     async connect(name,options){assert.ok(configured);this.closed=false;this.connections.push({name,options});}
     send(){assert.ok(configured);return this.ready;}
     queue(){return this.send();}
+    async getProfile(){return typeof profile==='function'?profile():profile;}
+    async getRankings(){return typeof rankings==='function'?rankings():rankings;}
     emit(event){if(event.type==='connection')this.ready=event.ready;this.onEvent(event);}
   }
   const context=vm.createContext({Reversi:game,ReversiAI:ai,RankedClient:FakeRanked,document,window:{REVERSI_ONLINE_URL:configured?'https://test.example':'',addEventListener(){}},location:{protocol:'http:'},Worker:FakeWorker,localStorage:{getItem(){return null;}},confirm:()=>true,setTimeout(fn){const id=++timerId;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);},setInterval(){return 0;},clearInterval(){}});
@@ -36,6 +38,43 @@ test('TOP opens first, then CPU level selection, then the game',()=>{
   assert.equal(ui.byId('game-screen').hidden,true);assert.equal(ui.byId('level-choices').children.length,10);
   ui.click(ui.byId('level-choices').children[9]);assert.equal(ui.byId('level-screen').hidden,true);assert.equal(ui.byId('game-screen').hidden,false);
   assert.equal(ui.byId('white-name').textContent,'CPU Lv.10');
+});
+test('TOP loads the saved rating without connecting or queuing',async()=>{
+  const ui=setup({configured:true,profile:{rating:1632}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ui.byId('top-rating').textContent,'レート 1632');
+  assert.equal(ui.clients[0].connections.length,0);
+  assert.equal(ui.byId('top-screen').hidden,false);
+  const first=setup({configured:true});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(first.byId('top-rating').textContent,'レート 1500');
+});
+test('TOP ranking opens without a nickname or matchmaking and returns to TOP',async()=>{
+  const ui=setup({configured:true,rankings:{players:[{nickname:'Player',rating:1712}]}});
+  ui.click(ui.byId('top-ranking'));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ui.byId('ranking-screen').hidden,false);assert.equal(ui.byId('top-screen').hidden,true);
+  assert.equal(ui.byId('online-options').hidden,true);
+  assert.equal(ui.byId('top-leaderboard').children[0].children[0].textContent,'1712');
+  assert.equal(ui.clients[0].connections.length,0);
+  ui.click(ui.byId('back-top'));assert.equal(ui.byId('ranking-screen').hidden,true);
+  assert.equal(ui.byId('top-screen').hidden,false);
+});
+test('failed ranking can retry, and a late response cannot replace a CPU screen',async()=>{
+  let resolveRanking,requests=0;
+  const ui=setup({configured:true,rankings:()=>++requests===1?Promise.reject(new Error('offline')):new Promise(resolve=>resolveRanking=resolve)});
+  ui.click(ui.byId('top-ranking'));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ui.byId('ranking-retry').hidden,false);
+  ui.click(ui.byId('ranking-retry'));ui.click(ui.byId('back-top'));ui.startCPU();
+  resolveRanking({players:[{nickname:'Late',rating:1800}]});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ui.byId('game-screen').hidden,false);assert.equal(ui.byId('ranking-screen').hidden,true);
+  assert.equal(ui.byId('top-leaderboard').children.length,0);
+});
+test('returning to TOP refreshes the rating and handles a failed lookup',async()=>{
+  let current={rating:1540};
+  const ui=setup({configured:true,profile:()=>current});await new Promise(resolve=>setImmediate(resolve));
+  ui.startCPU();current={rating:1576};ui.click(ui.byId('back-top'));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ui.byId('top-rating').textContent,'レート 1576');
+  ui.startCPU();current=Promise.reject(new Error('offline'));ui.click(ui.byId('back-top'));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ui.byId('top-rating').textContent,'レート 取得できません');
 });
 test('human move schedules CPU, CPU responds, undo restores both sides',()=>{
   const ui=setup();ui.startCPU();assert.equal(ui.byId('builder').children.length,4);
