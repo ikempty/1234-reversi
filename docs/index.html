@@ -1,0 +1,48 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>1234リバーシ</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="engine.js" defer></script>
+  <script src="ai.js" defer></script>
+  <script src="online-config.js" defer></script>
+  <script src="online.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main id="app" class="menu-view">
+    <header><h1>1234リバーシ</h1><button id="restart" class="quiet" hidden>最初から</button></header>
+    <section id="top-screen" class="menu-screen" aria-label="TOP画面">
+      <div class="mode-choices"><button id="mode-cpu">CPU対戦</button><button id="mode-online">ランダムマッチ</button></div>
+      <input id="nickname" class="nickname" aria-label="ランダムマッチのニックネーム" placeholder="ニックネーム" maxlength="16" autocomplete="nickname">
+    </section>
+    <section id="level-screen" class="menu-screen" aria-labelledby="level-title" hidden>
+      <h2 id="level-title" tabindex="-1">CPUレベル</h2>
+      <div id="level-choices" class="level-choices" aria-label="レベル1〜10"></div>
+    </section>
+    <section id="online-options" hidden aria-label="ランダムマッチ">
+      <div id="matching-view" class="matching-view"><h2 id="matching-title" tabindex="-1">マッチング</h2><div id="matching-spinner" class="spinner" aria-hidden="true" hidden></div></div>
+      <p id="online-status" class="notice" role="status"></p>
+      <button id="match" class="primary" hidden>再試行</button>
+      <div class="online-meta"><span id="rating">レート —</span><button id="leaderboard-toggle" class="quiet">ランキング</button></div>
+      <ol id="leaderboard" hidden aria-label="ランキング"></ol>
+    </section>
+    <div id="game-screen" hidden>
+    <section aria-label="リバーシ盤面">
+      <div class="scores"><div id="black-score" class="score"><i class="disc black"></i><div><span id="black-name">あなた</span><strong id="black-count">2</strong><small>残り <b id="black-stock">30</b></small></div></div><div id="turn" class="turn" aria-live="polite" tabindex="-1"></div><div id="white-score" class="score"><i class="disc white"></i><div><span id="white-name">CPU</span><strong id="white-count">2</strong><small>残り <b id="white-stock">30</b></small></div></div></div>
+      <div class="board-wrap"><div id="board" class="board" aria-label="8×8の盤面"></div></div>
+      <div class="board-footer"><span id="pass" role="status"></span><span id="move-count"></span></div>
+    </section>
+    <section class="workbench" aria-label="駒の合体と配置">
+      <div id="builder" class="builder" aria-label="2×2の合体スペース"></div>
+      <div class="actions"><button id="place" class="primary" disabled>置く</button><button id="undo" class="quiet" disabled>戻す</button></div>
+    </section>
+    <p id="status" class="notice" role="status" hidden></p>
+    </div>
+    <div class="back-row"><button id="back-top" class="quiet" hidden>TOPへ戻る</button></div>
+    <details><summary>ルール</summary><ul><li>手持ちは各32個。初期配置の2個を引いて30個から開始。</li><li>2×2の範囲で縦横につながる1〜4個を一度に配置。</li><li>どれか1個でも相手を挟めれば配置でき、置いた後は1個ずつ独立。</li><li>手持ちがない、または置けない場合はパス。両者が置けなくなったら駒が多い方の勝ち。</li><li>ランク対戦は1手120秒。時間切れ・投了は負け。再接続しても残り時間は継続。</li></ul></details>
+  </main>
+</body>
+</html>

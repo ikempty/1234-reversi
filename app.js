@@ -1,0 +1,235 @@
+﻿'use strict';
+const game=Reversi;
+const $=id=>document.getElementById(id);
+const names={1:'黒',2:'白'};
+let state=game.initialState(),shape=[[0,0]],selected=null,hover=null,history=[],legal=[];
+let screen='top',mode=null,level=3,thinking=false,worker=null,cpuTimer=null,job=0;
+let navigation=0;
+let online=null,connecting=false,pending=false,serverOffset=0,pendingTimer=null;
+const configured=!!window.REVERSI_ONLINE_URL;
+const ranked=new RankedClient(window.REVERSI_ONLINE_URL||'',onOnline);
+const boardButtons=[],builderButtons=[];
+const matches=(cells,r,c)=>cells?.some(p=>p[0]===r&&p[1]===c);
+const myColor=()=>mode==='cpu'?1:online?.match?.color;
+const onlineActive=()=>mode==='online'&&online?.match&&!online.match.state.over;
+const canInteract=()=>screen==='game'&&!state.over&&!thinking&&!pending&&state.current===myColor()&&(mode==='cpu'||ranked.ready);
+function message(text=''){$('status').textContent=text;$('status').hidden=!text;}
+function resetSelection(){selected=null;hover=null;message();}
+for(let value=1;value<=10;value++){
+  const button=document.createElement('button');
+  button.textContent=String(value);button.setAttribute('aria-label',`CPUレベル${value}`);
+  button.addEventListener('click',()=>{
+    if(screen!=='levels')return;
+    level=value;screen='game';newGame();$('turn').focus();
+  });
+  $('level-choices').append(button);
+}
+for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  const button=document.createElement('button');
+  button.addEventListener('click',()=>{
+    if(!canInteract())return;
+    if(!game.inspect(state,shape,r,c)){selected=null;hover=null;renderBoard();renderPlacement();message('ここには置けません。');return;}
+    selected=[r,c];hover=null;message();renderBoard();renderPlacement();
+  });
+  button.addEventListener('pointerenter',event=>{if(event.pointerType==='mouse'&&canInteract()){hover=[r,c];renderBoard();}});
+  button.addEventListener('focus',()=>{if(canInteract()){hover=[r,c];renderBoard();}});
+  button.addEventListener('blur',()=>{hover=null;renderBoard();});
+  boardButtons.push(button);$('board').append(button);
+}
+$('board').addEventListener('pointerleave',()=>{hover=null;renderBoard();});
+for(let r=0;r<2;r++)for(let c=0;c<2;c++){
+  const button=document.createElement('button');
+  button.setAttribute('aria-label',`合体スペース ${r+1}行${c+1}列`);
+  button.addEventListener('click',()=>{
+    if(!canInteract())return;
+    if(matches(shape,r,c))shape=shape.filter(([rr,cc])=>rr!==r||cc!==c);else shape.push([r,c]);
+    shape.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);resetSelection();render();
+    if(shape.length&&!game.validShape(shape))message('縦横につながる形にしてください。');
+    else if(shape.length>state.stock[state.current])message('手持ちの駒が足りません。');
+    else if(shape.length&&!legal.length)message('この形は置けません。');
+  });
+  builderButtons.push(button);$('builder').append(button);
+}
+function renderBoard(){
+  const location=hover||selected;
+  const preview=canInteract()&&location&&game.inspect(state,shape,...location);
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const button=boardButtons[r*8+c],value=state.board[r][c];
+    const anchor=canInteract()&&legal.some(m=>m.r===r&&m.c===c);
+    const ghost=preview&&matches(preview.cells,r,c),flip=preview&&matches(preview.flips,r,c);
+    button.className='cell'+(selected?.[0]===r&&selected?.[1]===c?' selected':'')+(matches(state.last?.cells,r,c)?' last':'')+(flip?' will-flip':'');
+    button.innerHTML=value?`<i class="disc ${value===1?'black':'white'}"></i>`:ghost?`<i class="disc ghost ${state.current===1?'black':'white'}"></i>`:anchor?'<i class="hint"></i>':'';
+    button.setAttribute('aria-label',`${String.fromCharCode(65+c)}${r+1} ${value?names[value]:'空き'}${anchor?' 配置可能':''}${flip?' 裏返る駒':''}`);
+    button.setAttribute('aria-pressed',String(selected?.[0]===r&&selected?.[1]===c));button.disabled=!canInteract();
+  }
+}
+function renderPlacement(){
+  const result=selected&&game.inspect(state,shape,...selected);
+  $('place').disabled=!canInteract()||!result;
+  $('place').textContent=pending?'送信中…':'置く';
+}
+function renderTurn(){
+  let text;
+  if(mode==='online'&&!online?.match)text=online?.queued?'対戦待ち':'—';
+  else if(state.over){
+    const counts=game.score(state);
+    const winner=mode==='online'?online.match.winner:counts[1]===counts[2]?0:counts[1]>counts[2]?1:2;
+    text=winner===0?'引き分け':winner===myColor()?'あなたの勝ち':'あなたの負け';
+  }else if(thinking)text='CPU思考中';
+  else text=state.current===myColor()?'あなたの番':'相手の番';
+  if(onlineActive()){
+    const seconds=Math.max(0,Math.ceil((online.match.deadline-(Date.now()+serverOffset))/1000));
+    text+=' '+seconds+'秒';
+  }
+  $('turn').textContent=text;
+}
+function render(){
+  $('app').classList.toggle('menu-view',screen!=='game');
+  $('top-screen').hidden=screen!=='top';
+  $('level-screen').hidden=screen!=='levels';
+  $('game-screen').hidden=screen!=='game';
+  $('online-options').hidden=mode!=='online';
+  $('matching-view').hidden=screen!=='matching';
+  $('matching-spinner').hidden=screen!=='matching'||(!connecting&&!(ranked.ready&&online?.queued));
+  $('back-top').hidden=screen==='top';
+  $('back-top').disabled=!!onlineActive();
+  $('back-top').textContent=screen==='matching'?'キャンセル':'TOPへ戻る';
+  legal=canInteract()?game.legalMoves(state,shape):[];
+  const counts=game.score(state);
+  for(const [p,color]of[[1,'black'],[2,'white']]){
+    $(color+'-count').textContent=counts[p];$(color+'-stock').textContent=state.stock[p];
+    $(color+'-score').classList.toggle('active',!state.over&&state.current===p&&(mode==='cpu'||!!online?.match));
+    $(color+'-name').textContent=mode==='cpu'?(p===1?'あなた':`CPU Lv.${level}`):(online?.match?.[color]?.nickname||names[p]);
+  }
+  $('move-count').textContent=(mode==='cpu'||online?.match)?`${state.moves}${state.over?'手で終了':'手'}`:'';
+  $('pass').textContent=state.last?.passed&&!state.over?`${names[state.last.passed]}はパス`:'';
+  for(let r=0;r<2;r++)for(let c=0;c<2;c++){
+    const button=builderButtons[r*2+c],filled=matches(shape,r,c);
+    button.className=(filled?'filled ':'')+(shape[0]?.[0]===r&&shape[0]?.[1]===c?'pivot':'');
+    button.innerHTML=filled?`<i class="disc ${myColor()===2?'white':'black'}"></i>`:'<span>+</span>';
+    button.setAttribute('aria-pressed',String(!!filled));button.disabled=!canInteract();
+  }
+  $('undo').hidden=mode!=='cpu';$('undo').disabled=!history.length;
+  $('restart').hidden=screen!=='game'||mode!=='cpu';
+  $('match').disabled=!configured||connecting;
+  $('match').hidden=!configured||connecting||!!(ranked.ready&&online?.queued);
+  $('match').textContent=!ranked.ready&&online?.match?'再接続':onlineActive()?'投了':screen==='game'?'もう一度対戦':'再試行';
+  $('nickname').disabled=connecting||!!online?.queued||!!onlineActive();
+  $('leaderboard-toggle').disabled=!ranked.ready;
+  const delta=online?.match?.delta;
+  $('rating').textContent=online?.profile?`レート ${online.profile.rating}${delta!=null?` (${delta>=0?'+':''}${delta})`:''}`:'レート —';
+  renderTurn();renderBoard();renderPlacement();
+}
+function stopCPU(){job++;clearTimeout(cpuTimer);if(worker){worker.terminate();worker=null;}thinking=false;}
+function scheduleCPU(){
+  if(screen!=='game'||mode!=='cpu'||state.over||state.current!==2)return;
+  thinking=true;resetSelection();render();const id=++job;
+  function finish(move){
+    if(id!==job||mode!=='cpu')return;
+    if(worker){worker.terminate();worker=null;}
+    const next=move&&game.play(state,move.shape,move.r,move.c);
+    if(!next){thinking=false;render();message('CPUの処理に失敗しました。「戻す」で再試行できます。');return;}
+    state=next;thinking=false;shape=[[0,0]];resetSelection();render();scheduleCPU();
+  }
+  function fallback(){
+    if(id!==job)return;
+    if(worker){worker.terminate();worker=null;}
+    cpuTimer=setTimeout(()=>{
+      if(id!==job)return;
+      try{finish(ReversiAI.chooseMove(state,level,{budgetMs:Math.min(180,ReversiAI.settings[level].ms)}));}
+      catch{finish(null);}
+    },30);
+  }
+  cpuTimer=setTimeout(()=>{
+    if(id!==job)return;
+    if(typeof Worker==='undefined'||location.protocol==='file:'){fallback();return;}
+    try{
+      worker=new Worker('ai-worker.js');
+      worker.onmessage=({data})=>{if(data.id===id){if(data.error)fallback();else finish(data.move);}};
+      worker.onerror=event=>{event.preventDefault();fallback();};
+      worker.postMessage({id,state,level});
+    }catch{fallback();}
+  },200);
+}
+function newGame(){stopCPU();state=game.initialState();shape=[[0,0]];history=[];resetSelection();render();}
+$('place').addEventListener('click',()=>{
+  if(!canInteract()||!selected)return;
+  if(mode==='online'){
+    if(ranked.send({type:'move',matchId:online.match.id,version:state.moves,shape,row:selected[0],col:selected[1]})){
+      pending=true;render();clearTimeout(pendingTimer);
+      pendingTimer=setTimeout(()=>{pending=false;ranked.send({type:'sync'});render();},8000);
+    }
+    return;
+  }
+  const next=game.play(state,shape,...selected);if(!next)return;
+  history.push({state,shape:shape.map(p=>p.slice())});state=next;shape=[[0,0]];resetSelection();render();scheduleCPU();
+});
+$('undo').addEventListener('click',()=>{
+  if(mode!=='cpu'||!history.length)return;
+  stopCPU();const previous=history.pop();state=previous.state;shape=previous.shape;resetSelection();render();
+});
+$('restart').addEventListener('click',()=>{if(!state.moves||confirm('最初から始めますか？'))newGame();});
+function chooseMode(next){
+  if(screen!=='top')return;
+  mode=next;screen=next==='cpu'?'levels':'matching';newGame();
+  if(next==='cpu')$('level-title').focus();
+  else{$('matching-title').focus();startMatching();}
+}
+$('mode-cpu').addEventListener('click',()=>chooseMode('cpu'));
+$('mode-online').addEventListener('click',()=>chooseMode('online'));
+$('back-top').addEventListener('click',()=>{
+  if(onlineActive())return;
+  if(screen==='game'&&mode==='cpu'&&state.moves&&!state.over&&!confirm('CPU対戦を終了してTOPへ戻りますか？'))return;
+  navigation++;stopCPU();ranked.close();online=null;connecting=false;pending=false;clearTimeout(pendingTimer);
+  mode=null;screen='top';$('leaderboard').hidden=true;$('online-status').textContent='';newGame();$('mode-cpu').focus();
+});
+async function startMatching(){
+  if(mode!=='online'||connecting)return;
+  if(!configured){$('online-status').textContent='オンライン対戦は準備中です。';render();return;}
+  const attempt=++navigation;
+  if(!onlineActive())screen='matching';
+  $('online-status').textContent='接続中…';
+  if(!ranked.ready){
+    if(!$('nickname').value.trim())$('nickname').value='ゲスト'+String(Math.floor(Math.random()*10000)).padStart(4,'0');
+    connecting=true;render();
+    try{await ranked.connect($('nickname').value,{queue:true});}
+    catch(error){if(attempt===navigation){connecting=false;$('online-status').textContent=error.message;render();}}
+  }else{
+    ranked.queue();$('online-status').textContent='対戦相手を探しています…';render();
+  }
+}
+$('match').addEventListener('click',()=>{
+  if(!configured||connecting)return;
+  if(onlineActive()&&ranked.ready){if(confirm('投了しますか？ レートが更新されます。'))ranked.send({type:'resign',matchId:online.match.id});return;}
+  startMatching();
+});
+$('leaderboard-toggle').addEventListener('click',()=>{
+  $('leaderboard').hidden=!$('leaderboard').hidden;
+  if(!$('leaderboard').hidden)ranked.send({type:'ranking'});
+});
+function onOnline(event){
+  if(mode!=='online')return;
+  if(event.type==='connection'){
+    connecting=!!event.connecting;
+    $('online-status').textContent=event.message;
+    if(!event.ready){pending=false;clearTimeout(pendingTimer);}
+  }else if(event.type==='snapshot'){
+    online=event;serverOffset=event.serverTime-Date.now();pending=false;clearTimeout(pendingTimer);
+    connecting=false;
+    if(event.match&&!event.queued&&(!event.match.state.over||screen==='game'))screen='game';
+    else screen='matching';
+    state=event.match?.state||game.initialState();shape=[[0,0]];resetSelection();
+    $('online-status').textContent=event.queued?'対戦相手を探しています…':event.match?.reason==='timeout'?'時間切れ':event.match?.reason==='resign'?'投了により終了':'';
+  }else if(event.type==='error'){
+    pending=false;clearTimeout(pendingTimer);$('online-status').textContent=event.message;
+  }else if(event.type==='ranking'){
+    $('leaderboard').replaceChildren();
+    for(const player of event.players){const li=document.createElement('li'),rating=document.createElement('span');li.textContent=player.nickname;rating.textContent=String(player.rating);li.append(rating);$('leaderboard').append(li);}
+    if(!event.players.length){const li=document.createElement('li');li.textContent='まだ対戦記録がありません。';$('leaderboard').append(li);}
+  }
+  render();
+}
+try{$('nickname').value=localStorage.getItem('1234-nickname')||'';}catch{}
+setInterval(()=>{if(onlineActive())renderTurn();},500);
+window.addEventListener('beforeunload',event=>{if(onlineActive()){event.preventDefault();event.returnValue='';}});
+render();

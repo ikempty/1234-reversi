@@ -1,0 +1,16 @@
+{
+  "name": "combined-reversi",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node serve.cjs",
+    "build:pages": "node scripts/build-pages.cjs",
+    "test": "node --test engine.test.cjs ai.test.cjs app.test.cjs backend/store.test.mjs",
+    "online:dev": "wrangler dev --config backend/wrangler.jsonc --var RANKED_ENABLED:true",
+    "online:check": "wrangler deploy --dry-run --config backend/wrangler.jsonc --outdir .worker-build",
+    "test:online": "npm run online:check && node --test backend/transport.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.167.0"
+  }
+}

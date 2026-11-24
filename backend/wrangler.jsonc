@@ -1,0 +1,16 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "1234-reversi-ranked",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-24",
+  "workers_dev": true,
+  "vars": {
+    "RANKED_ENABLED": "true",
+    "ALLOWED_ORIGINS": "https://ikempty.github.io,http://127.0.0.1:4173,http://localhost:4173"
+  },
+  "durable_objects": {
+    "bindings": [{"name": "RANKED", "class_name": "RankedLobby"}]
+  },
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["RankedLobby"]}],
+  "observability": {"enabled": false}
+}
