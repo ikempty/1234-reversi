@@ -1,4 +1,5 @@
 *{box-sizing:border-box}
+.site-banner{width:min(100%,320px);margin:32px auto 0}.site-banner a{display:block;border-radius:4px;overflow:hidden}.site-banner a:focus-visible{outline:3px solid #bda05b;outline-offset:4px}.site-banner img{display:block;width:100%;height:auto}
 :root{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;color:#243b2f;background:#f3f6f4;font-synthesis:none}
 body{margin:0}button,input,select{font:inherit}button{border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}button:disabled{cursor:default;opacity:.4}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #bda05b;outline-offset:3px}[hidden]{display:none!important}
 main{width:min(100% - 28px,470px);margin:24px auto 36px}header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:22px}h1{font-size:25px;font-weight:750;letter-spacing:.015em;margin:0}.quiet{background:transparent;color:#60766a;padding:10px;font-size:14px;border-radius:8px}.quiet:hover:not(:disabled){background:#e4ece6}
