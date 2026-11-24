@@ -180,8 +180,18 @@ $('undo').addEventListener('click',()=>{
   stopCPU();const previous=history.pop();state=previous.state;shape=previous.shape;resetSelection();render();
 });
 $('restart').addEventListener('click',()=>{if(!state.moves||confirm('最初から始めますか？'))newGame();});
+function requireNickname(){
+  const valid=!!$('nickname').value.trim();
+  $('nickname-error').textContent=valid?'':'ニックネームを入力してください。';
+  $('nickname-error').hidden=valid;
+  $('nickname').setAttribute('aria-invalid',String(!valid));
+  if(!valid)$('nickname').focus();
+  return valid;
+}
+$('nickname').addEventListener('input',()=>{if($('nickname').value.trim())requireNickname();});
 function chooseMode(next){
   if(screen!=='top')return;
+  if(next==='online'&&!requireNickname())return;
   mode=next;screen=next==='cpu'?'levels':'matching';newGame();
   if(next==='cpu')$('level-title').focus();
   else{$('matching-title').focus();startMatching();}
@@ -228,12 +238,12 @@ $('top-ranking').addEventListener('click',()=>{
 $('ranking-retry').addEventListener('click',()=>{if(screen==='ranking')loadTopRankings();});
 async function startMatching(){
   if(mode!=='online'||connecting)return;
+  if(!requireNickname()){mode=null;screen='top';render();$('nickname').focus();return;}
   if(!configured){$('online-status').textContent='オンライン対戦は準備中です。';render();return;}
   const attempt=++navigation;
   if(!onlineActive())screen='matching';
   $('online-status').textContent='接続中…';
   if(!ranked.ready){
-    if(!$('nickname').value.trim())$('nickname').value='ゲスト'+String(Math.floor(Math.random()*10000)).padStart(4,'0');
     connecting=true;render();
     try{await ranked.connect($('nickname').value,{queue:true});}
     catch(error){if(attempt===navigation){connecting=false;$('online-status').textContent=error.message;render();}}

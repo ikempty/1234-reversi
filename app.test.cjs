@@ -90,7 +90,7 @@ test('undo during CPU thinking cancels stale worker result',()=>{
   assert.equal(ui.byId('white-count').textContent,2);assert.equal(ui.byId('black-stock').textContent,30);
 });
 test('online mode is explicitly unavailable without a configured server',()=>{
-  const ui=setup();ui.click(ui.byId('mode-online'));
+  const ui=setup();ui.byId('nickname').value='Player';ui.click(ui.byId('mode-online'));
   assert.equal(ui.byId('match').disabled,true);assert.equal(ui.byId('place').disabled,true);
   assert.match(ui.byId('online-status').textContent,/準備中/);
   assert.equal(ui.byId('game-screen').hidden,true);
@@ -120,11 +120,24 @@ test('random match starts connecting from TOP and shows the board only when matc
   assert.equal(ui.byId('resign').disabled,true);assert.equal(ui.byId('match').hidden,false);assert.equal(ui.byId('match').textContent,'再接続');
 });
 test('cancel during matchmaking disconnects and keeps late events off TOP',()=>{
-  const ui=setup({configured:true});ui.click(ui.byId('mode-online'));const client=ui.clients[0];
-  assert.match(client.connections[0].name,/^ゲスト\d{4}$/);
+  const ui=setup({configured:true});ui.byId('nickname').value='Player';ui.click(ui.byId('mode-online'));const client=ui.clients[0];
+  assert.equal(client.connections[0].name,'Player');
   ui.click(ui.byId('back-top'));assert.ok(client.closed);
   client.emit({type:'snapshot',profile:{rating:1500},queued:true,match:null,serverTime:Date.now()});
   assert.equal(ui.byId('top-screen').hidden,false);assert.equal(ui.byId('online-options').hidden,true);
+});
+test('blank and whitespace names cannot start matching, while CPU remains available',()=>{
+  const ui=setup({configured:true});
+  for(const name of ['', ' \u3000 ']){
+    ui.byId('nickname').value=name;ui.click(ui.byId('mode-online'));
+    assert.equal(ui.byId('top-screen').hidden,false);
+    assert.equal(ui.clients[0].connections.length,0);
+    assert.equal(ui.byId('nickname-error').hidden,false);
+  }
+  ui.byId('nickname').value='';ui.startCPU();assert.equal(ui.byId('game-screen').hidden,false);
+  ui.click(ui.byId('back-top'));ui.byId('nickname').value='Player';ui.byId('nickname').events.input();
+  assert.equal(ui.byId('nickname-error').hidden,true);
+  ui.click(ui.byId('mode-online'));assert.equal(ui.clients[0].connections.length,1);
 });
 test('cancelled connection cannot reopen a socket after a new connection begins',async()=>{
   const requests=[],sockets=[];
