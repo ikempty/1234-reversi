@@ -17,7 +17,8 @@
     getRankings(){return this.read('/ranking');}
     async connect(nickname,{queue=false}={}){
       if(!this.url)throw new Error('オンライン対戦は準備中です。');
-      if(!nickname.trim()||[...nickname.trim()].length>16)throw new Error('ニックネームは1〜16文字で入力してください。');
+      const validation=root.NicknamePolicy.validate(nickname);
+      if(!validation.ok)throw new Error(validation.message);
       const endpoint=new URL(this.url);
       if(endpoint.protocol!=='https:' && !['localhost','127.0.0.1'].includes(endpoint.hostname))throw new Error('接続先の設定を確認してください。');
       let token;

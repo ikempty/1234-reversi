@@ -36,6 +36,11 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
     return {socket,next,send:data=>socket.send(JSON.stringify(data))};
   }
   try{
+    const rejected=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{...headers,Authorization:'Bearer '+'c'.repeat(64),'Content-Type':'application/json'},body:JSON.stringify({nickname:'ＦＵＣＫ'})});
+    assert.equal(rejected.status,400);
+    assert.match((await rejected.json()).error,/ニックネーム/);
+    const missing=await mf.dispatchFetch('http://localhost/profile',{headers:{...headers,Authorization:'Bearer '+'c'.repeat(64)}});
+    assert.equal(missing.status,404);
     const denied=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{Origin:'https://untrusted.example'},body:'{}'});assert.equal(denied.status,403);
     const empty=await mf.dispatchFetch('http://localhost/ranking',{headers});
     assert.equal(empty.status,200);assert.deepEqual(await empty.json(),{players:[]});

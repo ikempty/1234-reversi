@@ -15,6 +15,26 @@ function setup(){
   return {store,a,b,advance:ms=>clock+=ms};
 }
 function pair(){const fixture=setup();fixture.store.join(fixture.a.id);fixture.store.join(fixture.b.id);return fixture;}
+test('server rejects forbidden registration and rename without changing records',()=>{
+  const {store,a}=setup();
+  assert.throws(()=>store.register('new','死ね','ip3'));
+  assert.equal(store.authenticate('new'),null);
+  assert.throws(()=>store.register('a','ＦＵＣＫ','ip1'));
+  assert.equal(store.player(a.id).nickname,'Alice');
+  assert.equal(store.player(a.id).rating,1500);
+});
+test('legacy forbidden names are masked and must change before queuing',()=>{
+  const {store,a,b}=setup();
+  store.sql.exec('UPDATE players SET nickname=?,wins=1 WHERE id=?','死ね',a.id);
+  assert.equal(store.snapshot(a.id).profile.nickname,'プレイヤー');
+  assert.equal(store.rankings()[0].nickname,'プレイヤー');
+  assert.throws(()=>store.join(a.id));
+  store.sql.exec('INSERT INTO queue(player_id,joined) VALUES(?,?)',a.id,0);
+  store.join(b.id);assert.equal(store.snapshot(b.id).match,null);
+  store.register('a','さくら','ip1');store.join(a.id);
+  assert.ok(store.snapshot(a.id).match);
+  assert.equal(store.player(a.id).wins,1);
+});
 test('anonymous identity survives nickname changes and never leaks credentials',()=>{
   const {store,a}=setup();const again=store.register('a','New name','ip1');assert.equal(again.id,a.id);
   const snapshot=store.snapshot(a.id);assert.equal(snapshot.profile.nickname,'New name');assert.equal(snapshot.profile.rating,1500);

@@ -22,7 +22,7 @@ function setup({configured=false,profile=null,rankings={players:[]}}={}){
     async getRankings(){return typeof rankings==='function'?rankings():rankings;}
     emit(event){if(event.type==='connection')this.ready=event.ready;this.onEvent(event);}
   }
-  const context=vm.createContext({Reversi:game,ReversiAI:ai,RankedClient:FakeRanked,document,window:{REVERSI_ONLINE_URL:configured?'https://test.example':'',addEventListener(){}},location:{protocol:'http:'},Worker:FakeWorker,localStorage:{getItem(){return null;}},confirm:()=>true,setTimeout(fn){const id=++timerId;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);},setInterval(){return 0;},clearInterval(){}});
+  const context=vm.createContext({NicknamePolicy:require('./nickname-policy.js'),Reversi:game,ReversiAI:ai,RankedClient:FakeRanked,document,window:{REVERSI_ONLINE_URL:configured?'https://test.example':'',addEventListener(){}},location:{protocol:'http:'},Worker:FakeWorker,localStorage:{getItem(){return null;}},confirm:()=>true,setTimeout(fn){const id=++timerId;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);},setInterval(){return 0;},clearInterval(){}});
   vm.runInContext(fs.readFileSync('app.js','utf8'),context);
   function click(element){assert.equal(element.disabled,false);element.events.click();}
   const byId=id=>nodes.get(id);
@@ -31,6 +31,13 @@ function setup({configured=false,profile=null,rankings={players:[]}}={}){
   function runTimers(){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());}
   return {byId,click,startCPU,placeFirst,runTimers,workers,clients,context};
 }
+test('inappropriate nickname stays on TOP without making a connection',()=>{
+  const ui=setup({configured:true});ui.byId('nickname').value='死ね';
+  ui.click(ui.byId('mode-online'));
+  assert.equal(ui.byId('top-screen').hidden,false);
+  assert.equal(ui.byId('nickname-error').hidden,false);
+  assert.equal(ui.clients[0].connections.length,0);
+});
 test('TOP opens first, then CPU level selection, then the game',()=>{
   const ui=setup();assert.equal(ui.byId('top-screen').hidden,false);assert.equal(ui.byId('game-screen').hidden,true);
   assert.equal(ui.byId('board').children[19].disabled,true);
@@ -142,7 +149,7 @@ test('blank and whitespace names cannot start matching, while CPU remains availa
 test('cancelled connection cannot reopen a socket after a new connection begins',async()=>{
   const requests=[],sockets=[];
   class Socket{constructor(){sockets.push(this);}close(){} }
-  const context=vm.createContext({window:{},URL,AbortSignal,WebSocket:Socket,localStorage:{getItem:()=> 'a'.repeat(64),setItem(){}},fetch:()=>new Promise(resolve=>requests.push(resolve)),setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){}});
+  const context=vm.createContext({window:{NicknamePolicy:require('./nickname-policy.js')},URL,AbortSignal,WebSocket:Socket,localStorage:{getItem:()=> 'a'.repeat(64),setItem(){}},fetch:()=>new Promise(resolve=>requests.push(resolve)),setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){}});
   vm.runInContext(fs.readFileSync('online.js','utf8'),context);
   const client=new context.window.RankedClient('https://test.example',()=>{});
   const first=client.connect('First',{queue:true});client.close();const second=client.connect('Second',{queue:true});

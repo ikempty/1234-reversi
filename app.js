@@ -181,8 +181,8 @@ $('undo').addEventListener('click',()=>{
 });
 $('restart').addEventListener('click',()=>{if(!state.moves||confirm('最初から始めますか？'))newGame();});
 function requireNickname(){
-  const valid=!!$('nickname').value.trim();
-  $('nickname-error').textContent=valid?'':'ニックネームを入力してください。';
+  const result=NicknamePolicy.validate($('nickname').value),valid=result.ok;
+  $('nickname-error').textContent=result.message;
   $('nickname-error').hidden=valid;
   $('nickname').setAttribute('aria-invalid',String(!valid));
   if(!valid)$('nickname').focus();

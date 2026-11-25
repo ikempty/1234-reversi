@@ -2,6 +2,7 @@ const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
 const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/engine.js':'engine.js','/app.js':'app.js','/ai.js':'ai.js','/ai-worker.js':'ai-worker.js','/online.js':'online.js','/online-config.js':'online-config.js'};
+files['/nickname-policy.js']='nickname-policy.js';
 files['/assets/jardin-banner.webp']='assets/jardin-banner.webp';
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.webp':'image/webp'};
 const server=http.createServer((req,res)=>{

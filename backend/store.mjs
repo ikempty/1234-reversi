@@ -1,4 +1,5 @@
 import game from '../engine.js';
+import nicknamePolicy from '../nickname-policy.js';
 
 export const TURN_MS=120000;
 export function elo(black,white,outcome){
@@ -30,9 +31,9 @@ export class RankedStore {
   player(id){return this.first('SELECT * FROM players WHERE id = ?',id);}
   authenticate(hash){return this.first('SELECT * FROM players WHERE secret_hash = ?',hash);}
   register(hash,nickname,ipHash){
-    if(typeof nickname!=='string')throw new Error('ニックネームを入力してください。');
-    nickname=nickname.trim();
-    if(!nickname||[...nickname].length>16||/[\u0000-\u001f\u007f]/.test(nickname))throw new Error('ニックネームは1〜16文字で入力してください。');
+    const validation=nicknamePolicy.validate(nickname);
+    if(!validation.ok)throw new Error(validation.message);
+    nickname=validation.nickname;
     return this.transaction(()=>{
       const existing=this.authenticate(hash);
       if(existing){
@@ -57,12 +58,14 @@ export class RankedStore {
     return this.transaction(()=>{
       const player=this.player(id);if(!player)throw new Error('認証が必要です。');
       if(this.activeMatch(player))return [id];
+      const validation=nicknamePolicy.validate(player.nickname);
+      if(!validation.ok)throw new Error(validation.message);
       if(this.first('SELECT player_id FROM queue WHERE player_id = ?',id))return [id];
       const candidates=this.sql.exec('SELECT q.player_id FROM queue q WHERE q.player_id != ? ORDER BY q.joined LIMIT 100',id).toArray();
       let opponent=null;
       for(const item of candidates){
         const candidate=this.player(item.player_id);
-        if(!candidate||!isConnected(candidate.id)||this.activeMatch(candidate)){this.cancel(item.player_id);continue;}
+        if(!candidate||!nicknamePolicy.validate(candidate.nickname).ok||!isConnected(candidate.id)||this.activeMatch(candidate)){this.cancel(item.player_id);continue;}
         opponent=candidate;break;
       }
       if(!opponent){
@@ -81,12 +84,12 @@ export class RankedStore {
   cancel(id){this.sql.exec('DELETE FROM queue WHERE player_id = ?',id);return [id];}
   snapshot(id){
     const player=this.player(id);if(!player)throw new Error('認証が必要です。');
-    const profile={id:player.id,nickname:player.nickname,rating:player.rating,wins:player.wins,losses:player.losses,draws:player.draws};
+    const profile={id:player.id,nickname:nicknamePolicy.displayName(player.nickname),rating:player.rating,wins:player.wins,losses:player.losses,draws:player.draws};
     const row=player.match_id?this.first('SELECT * FROM matches WHERE id = ?',player.match_id):null;
     let match=null;
     if(row){
       const color=row.black===id?1:2,black=this.player(row.black),white=this.player(row.white);
-      match={id:row.id,state:JSON.parse(row.state),color,black:{nickname:black.nickname,rating:black.rating},white:{nickname:white.nickname,rating:white.rating},deadline:row.deadline,winner:row.winner,reason:row.reason,delta:color===1?row.delta_black:row.delta_white};
+      match={id:row.id,state:JSON.parse(row.state),color,black:{nickname:nicknamePolicy.displayName(black.nickname),rating:black.rating},white:{nickname:nicknamePolicy.displayName(white.nickname),rating:white.rating},deadline:row.deadline,winner:row.winner,reason:row.reason,delta:color===1?row.delta_black:row.delta_white};
     }
     return {type:'snapshot',profile,queued:!!this.first('SELECT player_id FROM queue WHERE player_id = ?',id),match,serverTime:this.now()};
   }
@@ -135,5 +138,5 @@ export class RankedStore {
     return [...new Set(affected)];
   });}
   nextDeadline(){return this.first('SELECT MIN(deadline) AS deadline FROM matches WHERE finished=0')?.deadline;}
-  rankings(){return this.sql.exec('SELECT nickname,rating,wins,losses,draws FROM players WHERE wins+losses+draws > 0 ORDER BY rating DESC,wins DESC,id LIMIT 50').toArray();}
+  rankings(){return this.sql.exec('SELECT nickname,rating,wins,losses,draws FROM players WHERE wins+losses+draws > 0 ORDER BY rating DESC,wins DESC,id LIMIT 50').toArray().map(player=>({...player,nickname:nicknamePolicy.displayName(player.nickname)}));}
 }
