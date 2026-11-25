@@ -2,6 +2,9 @@ import game from '../engine.js';
 import nicknamePolicy from '../nickname-policy.js';
 
 export const TURN_MS=120000;
+export class ClientError extends Error {
+  constructor(message,status=400){super(message);this.status=status;}
+}
 export function elo(black,white,outcome){
   const expected=1/(1+10**((white-black)/400));
   const change=Math.round(24*(outcome-expected));
@@ -25,14 +28,31 @@ export class RankedStore {
       );
       CREATE INDEX IF NOT EXISTS deadlines ON matches(finished,deadline);
       CREATE TABLE IF NOT EXISTS registrations (ip_hash TEXT PRIMARY KEY, day INTEGER NOT NULL, count INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS ranking_resets (id TEXT PRIMARY KEY, created_at INTEGER NOT NULL, player_count INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS ranking_reset_backup (
+        reset_id TEXT NOT NULL, player_id TEXT NOT NULL, rating INTEGER NOT NULL,
+        wins INTEGER NOT NULL, losses INTEGER NOT NULL, draws INTEGER NOT NULL,
+        match_id TEXT, PRIMARY KEY(reset_id,player_id)
+      );
     `);
   }
   first(query,...args){return this.sql.exec(query,...args).toArray()[0]||null;}
   player(id){return this.first('SELECT * FROM players WHERE id = ?',id);}
   authenticate(hash){return this.first('SELECT * FROM players WHERE secret_hash = ?',hash);}
+  resetRankingsOnce(resetId){
+    return this.transaction(()=>{
+      if(this.first('SELECT id FROM ranking_resets WHERE id = ?',resetId))return false;
+      this.sql.exec('INSERT INTO ranking_reset_backup(reset_id,player_id,rating,wins,losses,draws,match_id) SELECT ?,id,rating,wins,losses,draws,match_id FROM players',resetId);
+      this.sql.exec('UPDATE players SET rating=1500,wins=0,losses=0,draws=0');
+      // Keep active games running; old finished results must not appear as new-season results.
+      this.sql.exec('UPDATE players SET match_id=NULL WHERE match_id IN (SELECT id FROM matches WHERE finished=1)');
+      this.sql.exec('INSERT INTO ranking_resets(id,created_at,player_count) SELECT ?,?,COUNT(*) FROM players',resetId,this.now());
+      return true;
+    });
+  }
   register(hash,nickname,ipHash){
     const validation=nicknamePolicy.validate(nickname);
-    if(!validation.ok)throw new Error(validation.message);
+    if(!validation.ok)throw new ClientError(validation.message);
     nickname=validation.nickname;
     return this.transaction(()=>{
       const existing=this.authenticate(hash);
@@ -42,7 +62,7 @@ export class RankedStore {
       }
       const day=Math.floor(this.now()/86400000);
       const rate=this.first('SELECT * FROM registrations WHERE ip_hash = ?',ipHash);
-      if(rate?.day===day&&rate.count>=20)throw new Error('新規プレイヤーの作成上限です。後でお試しください。');
+      if(rate?.day===day&&rate.count>=20)throw new ClientError('新規プレイヤーの作成上限です。後でお試しください。');
       this.sql.exec('INSERT INTO registrations(ip_hash,day,count) VALUES(?,?,1) ON CONFLICT(ip_hash) DO UPDATE SET day=excluded.day,count=?',ipHash,day,rate?.day===day?rate.count+1:1);
       this.sql.exec('DELETE FROM registrations WHERE day < ?',day-2);
       const id=crypto.randomUUID();
@@ -56,10 +76,10 @@ export class RankedStore {
   }
   join(id,isConnected=()=>true){
     return this.transaction(()=>{
-      const player=this.player(id);if(!player)throw new Error('認証が必要です。');
+      const player=this.player(id);if(!player)throw new ClientError('認証が必要です。');
       if(this.activeMatch(player))return [id];
       const validation=nicknamePolicy.validate(player.nickname);
-      if(!validation.ok)throw new Error(validation.message);
+      if(!validation.ok)throw new ClientError(validation.message);
       if(this.first('SELECT player_id FROM queue WHERE player_id = ?',id))return [id];
       const candidates=this.sql.exec('SELECT q.player_id FROM queue q WHERE q.player_id != ? ORDER BY q.joined LIMIT 100',id).toArray();
       let opponent=null;
@@ -83,7 +103,7 @@ export class RankedStore {
   }
   cancel(id){this.sql.exec('DELETE FROM queue WHERE player_id = ?',id);return [id];}
   snapshot(id){
-    const player=this.player(id);if(!player)throw new Error('認証が必要です。');
+    const player=this.player(id);if(!player)throw new ClientError('認証が必要です。');
     const profile={id:player.id,nickname:nicknamePolicy.displayName(player.nickname),rating:player.rating,wins:player.wins,losses:player.losses,draws:player.draws};
     const row=player.match_id?this.first('SELECT * FROM matches WHERE id = ?',player.match_id):null;
     let match=null;
@@ -96,15 +116,15 @@ export class RankedStore {
   move(id,message){
     return this.transaction(()=>{
       const row=this.first('SELECT * FROM matches WHERE id = ?',String(message.matchId));
-      if(!row||![row.black,row.white].includes(id))throw new Error('この対戦には参加していません。');
-      if(row.finished)throw new Error('対戦は終了しています。');
+      if(!row||![row.black,row.white].includes(id))throw new ClientError('この対戦には参加していません。');
+      if(row.finished)throw new ClientError('対戦は終了しています。');
       const state=JSON.parse(row.state);
       if(row.deadline<=this.now())return this.finish(row,3-state.current,'timeout');
       const color=row.black===id?1:2;
-      if(state.current!==color)throw new Error('相手の手番です。');
-      if(message.version!==state.moves)throw new Error('盤面が更新されています。再接続してください。');
+      if(state.current!==color)throw new ClientError('相手の手番です。');
+      if(message.version!==state.moves)throw new ClientError('盤面が更新されています。再接続してください。');
       const next=game.play(state,message.shape,message.row,message.col);
-      if(!next)throw new Error('その場所には置けません。');
+      if(!next)throw new ClientError('その場所には置けません。');
       row.state=JSON.stringify(next);
       this.sql.exec('UPDATE matches SET state = ?,deadline = ? WHERE id = ?',row.state,this.now()+TURN_MS,row.id);
       if(next.over){const counts=game.score(next);return this.finish(row,counts[1]===counts[2]?0:counts[1]>counts[2]?1:2,'normal');}
@@ -114,7 +134,7 @@ export class RankedStore {
   resign(id,matchId){
     return this.transaction(()=>{
       const row=this.first('SELECT * FROM matches WHERE id = ?',String(matchId));
-      if(!row||![row.black,row.white].includes(id))throw new Error('この対戦には参加していません。');
+      if(!row||![row.black,row.white].includes(id))throw new ClientError('この対戦には参加していません。');
       if(row.finished)return [row.black,row.white];
       const state=JSON.parse(row.state);
       return this.finish(row,row.deadline<=this.now()?3-state.current:row.black===id?2:1,row.deadline<=this.now()?'timeout':'resign');

@@ -36,6 +36,13 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
     return {socket,next,send:data=>socket.send(JSON.stringify(data))};
   }
   try{
+    for(const body of ['null','[]','{bad json']){
+      const invalid=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{...headers,Authorization:'Bearer '+'d'.repeat(64)},body});
+      assert.equal(invalid.status,400);assert.equal((await invalid.json()).error,'入力内容が不正です。');
+    }
+    const largeBody=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode(JSON.stringify({nickname:'Guest',padding:'x'.repeat(3000)})));controller.close();}});
+    const oversized=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{...headers,Authorization:'Bearer '+'d'.repeat(64)},body:largeBody,duplex:'half'});
+    assert.equal(oversized.status,413);
     const rejected=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{...headers,Authorization:'Bearer '+'c'.repeat(64),'Content-Type':'application/json'},body:JSON.stringify({nickname:'ＦＵＣＫ'})});
     assert.equal(rejected.status,400);
     assert.match((await rejected.json()).error,/ニックネーム/);
@@ -70,5 +77,10 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
     assert.deepEqual((await publicRanking.json()).players,rankings.players);
     const readOnly=await mf.dispatchFetch('http://localhost/profile',{headers:{...headers,Authorization:'Bearer '+'c'.repeat(64)}});
     assert.equal(readOnly.status,404);
+    reconnected.socket.send('null');
+    await reconnected.next(m=>m.type==='error'&&m.message==='入力内容が不正です。');
+    const limited=new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Rate limit did not close socket')),8000);reconnected.socket.addEventListener('close',event=>{clearTimeout(timer);resolve(event.code);},{once:true});});
+    for(let i=0;i<45;i++)reconnected.send({type:'sync'});
+    assert.equal(await limited,1008);
   }finally{for(const socket of sockets)try{socket.close(1000);}catch{}await mf.dispose();}
 });

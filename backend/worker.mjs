@@ -1,5 +1,25 @@
 import {DurableObject} from 'cloudflare:workers';
-import {RankedStore} from './store.mjs';
+import {RankedStore,ClientError} from './store.mjs';
+
+// User-requested one-time reset. The database marker prevents repeat resets on deploy/restart.
+const RANKING_RESET_ID='2026-11-25-ranking-reset-1';
+async function readSessionBody(request){
+  const reader=request.body?.getReader();if(!reader)throw new ClientError('入力内容が不正です。');
+  const chunks=[];let size=0;
+  try{
+    for(;;){
+      const {done,value}=await reader.read();if(done)break;
+      size+=value.byteLength;
+      if(size>2048){await reader.cancel();throw new ClientError('リクエストが大きすぎます。',413);}
+      chunks.push(value);
+    }
+  }finally{reader.releaseLock();}
+  const bytes=new Uint8Array(size);let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  let data;try{data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{throw new ClientError('入力内容が不正です。');}
+  if(!data||typeof data!=='object'||Array.isArray(data))throw new ClientError('入力内容が不正です。');
+  return data;
+}
 
 const json=(value,status=200,headers={})=>Response.json(value,{status,headers:{'Cache-Control':'no-store',...headers}});
 async function digest(value){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),n=>n.toString(16).padStart(2,'0')).join('');}
@@ -29,6 +49,7 @@ export class RankedLobby extends DurableObject {
   constructor(ctx,env){
     super(ctx,env);this.ctx=ctx;
     this.store=new RankedStore(ctx.storage.sql,callback=>ctx.storage.transactionSync(callback));
+    this.store.resetRankingsOnce(RANKING_RESET_ID);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping','pong'));
   }
   connected(id){return this.ctx.getWebSockets(id).some(socket=>socket.readyState===1);}
@@ -50,8 +71,7 @@ export class RankedLobby extends DurableObject {
         return json({rating,wins,losses,draws});
       }
       if(url.pathname==='/session'&&request.method==='POST'){
-        const raw=await request.text();if(raw.length>2048)return json({error:'リクエストが大きすぎます。'},413);
-        const data=JSON.parse(raw);
+        const data=await readSessionBody(request);
         const ipHash=await digest((request.headers.get('CF-Connecting-IP')||'local')+Math.floor(Date.now()/86400000));
         const player=this.store.register(hash,data.nickname,ipHash);
         return json({id:player.id});
@@ -64,16 +84,17 @@ export class RankedLobby extends DurableObject {
       const expired=this.store.expire();this.broadcast(expired);
       this.send(server,this.store.snapshot(player.id));await this.schedule();
       return new Response(null,{status:101,webSocket:client,headers:{'Sec-WebSocket-Protocol':protocol}});
-    }catch(error){return json({error:error.message||'接続に失敗しました。'},400);}
+    }catch(error){return json({error:error instanceof ClientError?error.message:'接続に失敗しました。'},error instanceof ClientError?error.status:500);}
   }
   async webSocketMessage(socket,message){
     const auth=socket.deserializeAttachment();if(!auth)return socket.close(1008,'Unauthorized');
     if(typeof message!=='string'||message.length>2048)return socket.close(1009,'Message too large');
     const now=Date.now();if(now-auth.window>10000){auth.window=now;auth.count=0;}
     auth.count++;socket.serializeAttachment(auth);
-    if(auth.count>40){this.send(socket,{type:'error',message:'操作が多すぎます。少し待ってください。'});return;}
+    if(auth.count>40){socket.close(1008,'Rate limit exceeded');return;}
     try{
-      const data=JSON.parse(message);
+      let data;try{data=JSON.parse(message);}catch{throw new ClientError('入力内容が不正です。');}
+      if(!data||typeof data!=='object'||Array.isArray(data))throw new ClientError('入力内容が不正です。');
       this.broadcast(this.store.expire());
       let ids=[auth.id];
       if(data.type==='queue')ids=this.store.join(auth.id,id=>this.connected(id));
@@ -81,9 +102,9 @@ export class RankedLobby extends DurableObject {
       else if(data.type==='move')ids=this.store.move(auth.id,data);
       else if(data.type==='resign')ids=this.store.resign(auth.id,data.matchId);
       else if(data.type==='ranking'){this.send(socket,{type:'ranking',players:this.store.rankings()});return;}
-      else if(data.type!=='sync')throw new Error('不明な操作です。');
+      else if(data.type!=='sync')throw new ClientError('不明な操作です。');
       this.broadcast(ids);
-    }catch(error){this.send(socket,{type:'error',message:error.message||'操作に失敗しました。'});}
+    }catch(error){this.send(socket,{type:'error',message:error instanceof ClientError?error.message:'操作に失敗しました。'});}
     await this.schedule();
   }
   async webSocketClose(socket,code){

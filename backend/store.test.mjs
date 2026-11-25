@@ -15,6 +15,38 @@ function setup(){
   return {store,a,b,advance:ms=>clock+=ms};
 }
 function pair(){const fixture=setup();fixture.store.join(fixture.a.id);fixture.store.join(fixture.b.id);return fixture;}
+
+test('ranking reset preserves identity, archives scores and only runs once across restarts',()=>{
+  const {store,a,b}=pair(),matchId=store.snapshot(a.id).match.id;
+  store.resign(a.id,matchId);
+  assert.equal(store.resetRankingsOnce('reset-test'),true);
+  assert.deepEqual(store.rankings(),[]);
+  assert.equal(store.authenticate('a').id,a.id);
+  assert.equal(store.player(a.id).nickname,'Alice');
+  for(const player of [a,b]){
+    const profile=store.snapshot(player.id).profile;
+    assert.deepEqual([profile.rating,profile.wins,profile.losses,profile.draws],[1500,0,0,0]);
+    assert.equal(store.snapshot(player.id).match,null);
+  }
+  const backup=store.first('SELECT * FROM ranking_reset_backup WHERE player_id=?',a.id);
+  assert.equal(backup.rating,1488);assert.equal(backup.losses,1);assert.equal(backup.match_id,matchId);
+  store.join(a.id);store.join(b.id);store.resign(b.id,store.snapshot(a.id).match.id);
+  const restarted=new RankedStore(store.sql,store.transaction,store.now);
+  assert.equal(restarted.resetRankingsOnce('reset-test'),false);
+  assert.equal(restarted.player(a.id).rating,1512);
+  assert.equal(restarted.first('SELECT COUNT(*) AS count FROM ranking_reset_backup').count,2);
+});
+
+test('ranking reset retains active matches and settles them against reset ratings',()=>{
+  const {store,a,b}=pair(),matchId=store.snapshot(a.id).match.id;
+  store.sql.exec('UPDATE players SET rating=1700,wins=5 WHERE id=?',a.id);
+  store.resetRankingsOnce('reset-active');
+  assert.equal(store.snapshot(a.id).match.id,matchId);
+  assert.equal(store.snapshot(a.id).match.state.over,false);
+  store.resign(a.id,matchId);
+  assert.equal(store.player(a.id).rating,1488);assert.equal(store.player(b.id).rating,1512);
+  assert.equal(store.player(a.id).losses,1);
+});
 test('server rejects forbidden registration and rename without changing records',()=>{
   const {store,a}=setup();
   assert.throws(()=>store.register('new','死ね','ip3'));
