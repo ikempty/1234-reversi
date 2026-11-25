@@ -118,7 +118,6 @@ function render(){
   $('undo').hidden=mode!=='cpu';$('undo').disabled=!history.length;
   $('resign').hidden=screen!=='game'||!onlineActive();
   $('resign').disabled=!ranked.ready||connecting||pending;
-  $('restart').hidden=screen!=='game'||mode!=='cpu';
   $('match').disabled=!configured||connecting;
   $('match').hidden=!configured||connecting||!!(ranked.ready&&(online?.queued||onlineActive()));
   $('match').textContent=!ranked.ready&&online?.match?'再接続':screen==='game'?'もう一度対戦':'再試行';
@@ -179,7 +178,12 @@ $('undo').addEventListener('click',()=>{
   if(mode!=='cpu'||!history.length)return;
   stopCPU();const previous=history.pop();state=previous.state;shape=previous.shape;resetSelection();render();
 });
-$('restart').addEventListener('click',()=>{if(!state.moves||confirm('最初から始めますか？'))newGame();});
+$('rules-open').addEventListener('click',()=>$('rules-dialog').showModal());
+$('rules-close').addEventListener('click',()=>$('rules-dialog').close());
+$('rules-dialog').addEventListener('click',event=>{if(event.target===$('rules-dialog')){
+  const rect=$('rules-dialog').getBoundingClientRect();
+  if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)$('rules-dialog').close();
+}});
 function requireNickname(){
   const result=NicknamePolicy.validate($('nickname').value),valid=result.ok;
   $('nickname-error').textContent=result.message;

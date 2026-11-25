@@ -6,7 +6,7 @@ const game=require('./engine.js');
 const ai=require('./ai.js');
 function setup({configured=false,profile=null,rankings={players:[]}}={}){
   const nodes=new Map(),timers=new Map(),workers=[],clients=[];let timerId=0;
-  function element(){return {children:[],events:{},textContent:'',value:'',hidden:false,disabled:false,classList:{toggle(){}},focus(){},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
+  function element(){return {children:[],events:{},textContent:'',value:'',hidden:false,disabled:false,classList:{toggle(){}},focus(){},showModal(){this.open=true;},close(){this.open=false;},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
   const document={getElementById(id){if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);},createElement:element};
   class FakeWorker{
     constructor(){workers.push(this);}postMessage(data){this.data=structuredClone(data);}terminate(){this.terminated=true;}
@@ -37,6 +37,15 @@ test('inappropriate nickname stays on TOP without making a connection',()=>{
   assert.equal(ui.byId('top-screen').hidden,false);
   assert.equal(ui.byId('nickname-error').hidden,false);
   assert.equal(ui.clients[0].connections.length,0);
+});
+test('rules can open from TOP and during a game without resetting the board',()=>{
+  const ui=setup();ui.click(ui.byId('rules-open'));
+  assert.equal(ui.byId('rules-dialog').open,true);ui.click(ui.byId('rules-close'));
+  assert.equal(ui.byId('rules-dialog').open,false);
+  ui.startCPU();ui.placeFirst();const moves=ui.byId('move-count').textContent;
+  ui.click(ui.byId('rules-open'));assert.equal(ui.byId('rules-dialog').open,true);
+  ui.click(ui.byId('rules-close'));assert.equal(ui.byId('move-count').textContent,moves);
+  assert.equal(ui.byId('game-screen').hidden,false);
 });
 test('TOP opens first, then CPU level selection, then the game',()=>{
   const ui=setup();assert.equal(ui.byId('top-screen').hidden,false);assert.equal(ui.byId('game-screen').hidden,true);

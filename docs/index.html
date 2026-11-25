@@ -2,24 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071e18">
+  <meta name="description" content="1から4、つなげて変わるリバーシ。CPU対戦とレート付きランダムマッチ。">
   <title>1234リバーシ</title>
-  <link rel="stylesheet" href="style.css?v=c34d54c862d8">
+  <link rel="stylesheet" href="style.css?v=07497d00df71">
+  <link rel="icon" type="image/png" href="assets/brand-logo.png?v=5584c6843039">
+  <link rel="apple-touch-icon" href="assets/brand-logo.png?v=5584c6843039">
   <script src="engine.js?v=9d3b081cb389" defer></script>
   <script src="ai.js?v=ab6164aacc88" defer></script>
   <script src="online-config.js?v=88dcc0edae18" defer></script>
   <script src="nickname-policy.js?v=ee0c9ff96834" defer></script>
   <script src="online.js?v=0425e7fe9a9c" defer></script>
-  <script src="app.js?v=c8a853f9fb71" defer></script>
+  <script src="app.js?v=07ef732e7c86" defer></script>
 </head>
 <body>
   <main id="app" class="menu-view">
-    <header><h1>1234リバーシ</h1><button id="restart" class="quiet" hidden>最初から</button></header>
-    <section id="top-screen" class="menu-screen" aria-label="TOP画面">
-      <div class="mode-choices"><button id="mode-cpu">CPU対戦</button><button id="mode-online">ランダムマッチ</button></div>
+    <header class="site-header">
+      <div class="brand-lockup" aria-label="1234リバーシ"><img src="assets/brand-logo.png?v=5584c6843039" alt="" width="44" height="44"><span><b>1234</b><small>リバーシ</small></span></div>
+      <nav aria-label="ゲームメニュー"><button id="back-top" class="quiet" hidden>TOPへ戻る</button><button id="rules-open" class="quiet" aria-haspopup="dialog">ルール</button></nav>
+    </header>
+    <section id="top-screen" class="hero" aria-label="TOP画面">
+      <div class="hero-art" aria-hidden="true"><div class="logo-stage"><img src="assets/brand-logo.png?v=5584c6843039" alt="" width="1254" height="1254" fetchpriority="high"></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div></div>
+      <div class="hero-menu">
+      <h1 class="hero-title" aria-label="1234リバーシ"><span class="title-numbers" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i></span><span class="title-jp" aria-hidden="true">リバーシ</span></h1>
+      <div class="mode-choices"><button id="mode-cpu"><span>CPU対戦</span><small>LEVEL 1 — 10</small></button><button id="mode-online"><span>ランダムマッチ</span><small>RANKED MATCH</small></button></div>
+      <div class="player-entry">
       <input id="nickname" class="nickname" aria-label="ランダムマッチのニックネーム" aria-describedby="nickname-error" placeholder="ニックネーム" maxlength="16" autocomplete="nickname">
       <p id="nickname-error" class="notice" role="alert" hidden></p>
       <div class="top-meta"><span id="top-rating" aria-live="polite">レート —</span><button id="top-ranking" class="quiet">ランキング</button></div>
+      </div></div>
     </section>
     <section id="level-screen" class="menu-screen" aria-labelledby="level-title" hidden>
       <h2 id="level-title" tabindex="-1">CPUレベル</h2>
@@ -39,20 +51,22 @@
       <ol id="leaderboard" hidden aria-label="ランキング"></ol>
     </section>
     <div id="game-screen" hidden>
-    <section aria-label="リバーシ盤面">
-      <div class="scores"><div id="black-score" class="score"><i class="disc black"></i><div><span id="black-name">あなた</span><small id="black-rating" class="player-rating" hidden></small><strong id="black-count">2</strong><small>残り <b id="black-stock">30</b></small></div></div><div id="turn" class="turn" aria-live="polite" tabindex="-1"></div><div id="white-score" class="score"><i class="disc white"></i><div><span id="white-name">CPU</span><small id="white-rating" class="player-rating" hidden></small><strong id="white-count">2</strong><small>残り <b id="white-stock">30</b></small></div></div></div>
+    <section class="arena" aria-label="リバーシ盤面">
       <div class="board-wrap"><div id="board" class="board" aria-label="8×8の盤面"></div></div>
       <div class="board-footer"><span id="pass" role="status"></span><span id="move-count"></span></div>
     </section>
+    <div class="game-sidebar">
+      <div class="scores"><div id="black-score" class="score"><i class="disc black"></i><div><span id="black-name">あなた</span><small id="black-rating" class="player-rating" hidden></small><strong id="black-count">2</strong><small>残り <b id="black-stock">30</b></small></div></div><div id="turn" class="turn" aria-live="polite" tabindex="-1"></div><div id="white-score" class="score"><i class="disc white"></i><div><span id="white-name">CPU</span><small id="white-rating" class="player-rating" hidden></small><strong id="white-count">2</strong><small>残り <b id="white-stock">30</b></small></div></div></div>
     <section class="workbench" aria-label="駒の合体と配置">
       <div id="builder" class="builder" aria-label="2×2の合体スペース"></div>
       <div class="actions"><button id="place" class="primary" disabled>置く</button><button id="resign" class="quiet" hidden>投了</button><button id="undo" class="quiet" disabled>戻す</button></div>
     </section>
     <p id="status" class="notice" role="status" hidden></p>
+    <aside class="site-banner game-banner" aria-label="関連サイト"><a href="https://jardin-redi.com/" target="_blank" rel="noopener noreferrer" aria-label="ジャルダン代々木下原（新しいタブで開く）"><img src="assets/jardin-banner.webp?v=3dd43b96ad53" alt="ジャルダン代々木下原" width="1240" height="649" loading="lazy" decoding="async"></a></aside>
     </div>
-    <div class="back-row"><button id="back-top" class="quiet" hidden>TOPへ戻る</button></div>
-    <details><summary>ルール</summary><ul><li>手持ちは各32個。初期配置の2個を引いて30個から開始。</li><li>2×2の範囲で縦横につながる1〜4個を一度に配置。</li><li>どれか1個でも相手を挟めれば配置でき、置いた後は1個ずつ独立。</li><li>手持ちがない、または置けない場合はパス。両者が置けなくなったら駒が多い方の勝ち。</li><li>ランク対戦は1手120秒。時間切れ・投了は負け。再接続しても残り時間は継続。</li></ul></details>
-    <aside class="site-banner" aria-label="関連サイト">
+    </div>
+    <dialog id="rules-dialog" aria-labelledby="rules-title"><div class="rules-heading"><h2 id="rules-title">ルール</h2><button id="rules-close" class="quiet" autofocus aria-label="ルールを閉じる">閉じる</button></div><div class="rule-shapes" aria-hidden="true"><span>●</span><span>●●</span><span>●<br>●●</span><span>●●<br>●●</span></div><ul><li>手持ちは各32個。初期配置の2個を引いて30個から開始。</li><li>2×2の範囲で縦横につながる1〜4個を一度に配置。</li><li>どれか1個でも相手を挟めれば配置でき、置いた後は1個ずつ独立。</li><li>手持ちがない、または置けない場合はパス。両者が置けなくなったら駒が多い方の勝ち。</li><li>ランク対戦は1手120秒。時間切れ・投了は負け。ルールを開いている間も対局時計は進みます。</li></ul></dialog>
+    <aside class="site-banner menu-banner" aria-label="関連サイト">
       <a href="https://jardin-redi.com/" target="_blank" rel="noopener noreferrer" aria-label="ジャルダン代々木下原（新しいタブで開く）">
         <img src="assets/jardin-banner.webp?v=3dd43b96ad53" alt="ジャルダン代々木下原" width="1240" height="649" loading="lazy" decoding="async">
       </a>
