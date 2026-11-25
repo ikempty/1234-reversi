@@ -39,4 +39,5 @@ main{width:min(1120px,100% - 64px);margin:auto;padding:0 0 max(20px,env(safe-are
 .rules-list strong{display:block;margin-bottom:5px;color:var(--gold);font-size:13px;font-weight:600;letter-spacing:.08em}
 .rules-list .rule-description>div{font-weight:400}
 .rule-continuation{display:block;margin-top:.6em}
+.rule-piece-examples{display:block;width:248px;max-width:100%;height:auto;margin:12px 0 2px}.rule-piece-examples text{fill:var(--muted);font-size:11px;font-weight:400;text-anchor:middle}
 @media(max-width:500px){#rules-dialog .rules-heading{padding:14px 20px 10px}#rules-dialog .rules-list{padding:4px 20px 24px}#rules-dialog .rules-list li+li{margin-top:16px}}

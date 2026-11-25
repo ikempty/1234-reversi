@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#071e18">
   <meta name="description" content="1から4、つなげて変わるリバーシ。CPU対戦とレート付きランダムマッチ。">
   <title>1234リバーシ</title>
-  <link rel="stylesheet" href="style.css?v=142872aeb07e">
+  <link rel="stylesheet" href="style.css?v=f57a6e9291e5">
   <link rel="icon" type="image/png" href="assets/brand-logo.png?v=5584c6843039">
   <link rel="apple-touch-icon" href="assets/brand-logo.png?v=5584c6843039">
   <script src="engine.js?v=9d3b081cb389" defer></script>
@@ -69,7 +69,20 @@
       <div class="rules-heading"><h2 id="rules-title">ルール</h2><button id="rules-close" class="quiet" autofocus aria-label="ルールを閉じる">閉じる</button></div>
       <ul class="rules-list">
         <li><div class="rule-description"><strong>基本ルール</strong><div>通常のリバーシと同様、相手の駒を挟んで裏返します。</div></div></li>
-        <li><div class="rule-description"><strong>駒</strong><div>各プレイヤー32個。初期配置の2個を除いた30個を手持ちとします。<span class="rule-continuation">2×2マスの範囲内で、縦横につながる1〜4個の駒を一度に置けます。</span></div></div></li>
+        <li><div class="rule-description"><strong>駒</strong><div>各プレイヤー32個。初期配置の2個を除いた30個を手持ちとします。<span class="rule-continuation">2×2マスの範囲内で、縦横につながる1〜4個の駒を一度に置けます。</span>
+          <svg class="rule-piece-examples" viewBox="0 0 248 72" role="img" aria-labelledby="rule-piece-title">
+            <title id="rule-piece-title">2×2マスで作れる形の例：1個、縦につながる2個、L字の3個、正方形の4個。</title>
+            <defs>
+              <radialGradient id="rule-stone-fill" cx="35%" cy="25%" r="80%"><stop stop-color="#fffdf4"/><stop offset="1" stop-color="#cccbbd"/></radialGradient>
+              <g id="rule-mini-board"><rect x="1" y="1" width="44" height="44" rx="4" fill="#214333" stroke="#d6b778" stroke-opacity=".25"/><path d="M23 1v44M1 23h44" stroke="#d6b778" stroke-opacity=".2"/></g>
+              <circle id="rule-mini-stone" cx="12" cy="12" r="9.5" fill="url(#rule-stone-fill)"/>
+            </defs>
+            <g transform="translate(3 1)"><use href="#rule-mini-board"/><use href="#rule-mini-stone"/><text x="23" y="65">1個</text></g>
+            <g transform="translate(67 1)"><use href="#rule-mini-board"/><use href="#rule-mini-stone"/><use href="#rule-mini-stone" y="22"/><text x="23" y="65">2個</text></g>
+            <g transform="translate(131 1)"><use href="#rule-mini-board"/><use href="#rule-mini-stone"/><use href="#rule-mini-stone" y="22"/><use href="#rule-mini-stone" x="22" y="22"/><text x="23" y="65">3個</text></g>
+            <g transform="translate(195 1)"><use href="#rule-mini-board"/><use href="#rule-mini-stone"/><use href="#rule-mini-stone" x="22"/><use href="#rule-mini-stone" y="22"/><use href="#rule-mini-stone" x="22" y="22"/><text x="23" y="65">4個</text></g>
+          </svg>
+        </div></div></li>
         <li><div class="rule-description"><strong>配置条件</strong><div>置く駒のうち、1個でも相手の駒を挟めれば配置できます。配置後はそれぞれ独立した駒として扱います。</div></div></li>
         <li><div class="rule-description"><strong>パス</strong><div>手持ちの駒がない、または配置できない場合はパスとなります。</div></div></li>
         <li><div class="rule-description"><strong>勝敗</strong><div>双方が駒を置けなくなった時点で、盤面上の駒が多い方の勝ちです。</div></div></li>
