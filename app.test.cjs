@@ -100,6 +100,17 @@ test('human move schedules CPU, CPU responds, undo restores both sides',()=>{
   ui.click(ui.byId('undo'));assert.equal(ui.byId('black-stock').textContent,30);assert.equal(ui.byId('white-stock').textContent,30);
   assert.equal(ui.byId('black-count').textContent,2);
 });
+test('CPU result cannot be undone, while TOP navigation remains available',()=>{
+  const ui=setup();ui.startCPU();
+  vm.runInContext('state.board=Array.from({length:8},()=>Array(8).fill(1));state.board[0][1]=2;state.board[0][2]=0;render();',ui.context);
+  ui.click(ui.byId('board').children[2]);ui.click(ui.byId('place'));
+  assert.equal(ui.byId('turn').textContent,'あなたの勝ち');
+  assert.equal(ui.byId('undo').disabled,true);
+  ui.byId('undo').events.click();
+  assert.equal(ui.byId('black-count').textContent,64);
+  assert.equal(ui.byId('turn').textContent,'あなたの勝ち');
+  ui.click(ui.byId('back-top'));assert.equal(ui.byId('top-screen').hidden,false);
+});
 test('undo during CPU thinking cancels stale worker result',()=>{
   const ui=setup();ui.startCPU();ui.placeFirst();ui.runTimers();const worker=ui.workers[0];
   ui.click(ui.byId('undo'));assert.ok(worker.terminated);worker.reply();

@@ -90,6 +90,7 @@ function render(){
   $('level-screen').hidden=screen!=='levels';
   $('ranking-screen').hidden=screen!=='ranking';
   $('top-ranking').disabled=!configured;
+  $('top-ranking').hidden=screen!=='top';
   $('game-screen').hidden=screen!=='game';
   $('online-options').hidden=mode!=='online';
   $('matching-view').hidden=screen!=='matching';
@@ -115,7 +116,7 @@ function render(){
     button.innerHTML=filled?`<i class="disc ${myColor()===2?'white':'black'}"></i>`:'<span>+</span>';
     button.setAttribute('aria-pressed',String(!!filled));button.disabled=!canInteract();
   }
-  $('undo').hidden=mode!=='cpu';$('undo').disabled=!history.length;
+  $('undo').hidden=mode!=='cpu';$('undo').disabled=state.over||!history.length;
   $('resign').hidden=screen!=='game'||!onlineActive();
   $('resign').disabled=!ranked.ready||connecting||pending;
   $('match').disabled=!configured||connecting;
@@ -175,7 +176,7 @@ $('place').addEventListener('click',()=>{
   history.push({state,shape:shape.map(p=>p.slice())});state=next;shape=[[0,0]];resetSelection();render();scheduleCPU();
 });
 $('undo').addEventListener('click',()=>{
-  if(mode!=='cpu'||!history.length)return;
+  if(mode!=='cpu'||state.over||!history.length)return;
   stopCPU();const previous=history.pop();state=previous.state;shape=previous.shape;resetSelection();render();
 });
 $('rules-open').addEventListener('click',()=>$('rules-dialog').showModal());
