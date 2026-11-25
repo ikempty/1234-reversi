@@ -65,7 +65,17 @@
     <p id="status" class="notice" role="status" hidden></p>
     </div>
     </div>
-    <dialog id="rules-dialog" aria-labelledby="rules-title"><div class="rules-heading"><h2 id="rules-title">ルール</h2><button id="rules-close" class="quiet" autofocus aria-label="ルールを閉じる">閉じる</button></div><div class="rule-shapes" aria-hidden="true"><span>●</span><span>●●</span><span>●<br>●●</span><span>●●<br>●●</span></div><ul><li>手持ちは各32個。初期配置の2個を引いて30個から開始。</li><li>2×2の範囲で縦横につながる1〜4個を一度に配置。</li><li>どれか1個でも相手を挟めれば配置でき、置いた後は1個ずつ独立。</li><li>手持ちがない、または置けない場合はパス。両者が置けなくなったら駒が多い方の勝ち。</li><li>ランク対戦は1手120秒。時間切れ・投了は負け。ルールを開いている間も対局時計は進みます。</li></ul></dialog>
+    <dialog id="rules-dialog" aria-labelledby="rules-title">
+      <div class="rules-heading"><h2 id="rules-title">ルール</h2><button id="rules-close" class="quiet" autofocus aria-label="ルールを閉じる">閉じる</button></div>
+      <div class="rule-shapes" aria-hidden="true"><span>●</span><span>●●</span><span>●<br>●●</span><span>●●<br>●●</span></div>
+      <ul class="rules-list">
+        <li><div class="rule-description"><strong>基本ルール：</strong><div>通常のリバーシと同様、相手の駒を挟んで裏返します。</div></div></li>
+        <li><div class="rule-description"><strong>駒：</strong><div>各プレイヤー32個。初期配置の2個を除いた30個を手持ちとします。<span class="rule-continuation">2×2マスの範囲内で、縦横につながる1〜4個の駒を一度に置けます。</span></div></div></li>
+        <li><div class="rule-description"><strong>配置条件：</strong><div>置く駒のうち、1個でも相手の駒を挟めれば配置できます。配置後はそれぞれ独立した駒として扱います。</div></div></li>
+        <li><div class="rule-description"><strong>パス：</strong><div>手持ちの駒がない、または配置できない場合はパスとなります。</div></div></li>
+        <li><div class="rule-description"><strong>勝敗：</strong><div>双方が駒を置けなくなった時点で、盤面上の駒が多い方の勝ちです。</div></div></li>
+      </ul>
+    </dialog>
     <dialog id="result-dialog" class="match-result" aria-labelledby="result-title" aria-describedby="result-reason">
       <div class="result-light" aria-hidden="true"></div>
       <div class="result-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
