@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#071e18">
   <meta name="description" content="1から4、つなげて変わるリバーシ。CPU対戦とレート付きランダムマッチ。">
   <title>1234リバーシ</title>
-  <link rel="stylesheet" href="style.css?v=d4aad20e7701">
+  <link rel="stylesheet" href="style.css?v=cab59a6f7464">
   <link rel="icon" type="image/png" href="assets/brand-logo.png?v=5584c6843039">
   <link rel="apple-touch-icon" href="assets/brand-logo.png?v=5584c6843039">
   <script src="engine.js?v=9d3b081cb389" defer></script>
@@ -14,7 +14,7 @@
   <script src="online-config.js?v=88dcc0edae18" defer></script>
   <script src="nickname-policy.js?v=ee0c9ff96834" defer></script>
   <script src="online.js?v=0425e7fe9a9c" defer></script>
-  <script src="app.js?v=c1b9bf48ef8a" defer></script>
+  <script src="app.js?v=0065f7d279e3" defer></script>
 </head>
 <body>
   <main id="app" class="menu-view">
@@ -66,6 +66,19 @@
     </div>
     </div>
     <dialog id="rules-dialog" aria-labelledby="rules-title"><div class="rules-heading"><h2 id="rules-title">ルール</h2><button id="rules-close" class="quiet" autofocus aria-label="ルールを閉じる">閉じる</button></div><div class="rule-shapes" aria-hidden="true"><span>●</span><span>●●</span><span>●<br>●●</span><span>●●<br>●●</span></div><ul><li>手持ちは各32個。初期配置の2個を引いて30個から開始。</li><li>2×2の範囲で縦横につながる1〜4個を一度に配置。</li><li>どれか1個でも相手を挟めれば配置でき、置いた後は1個ずつ独立。</li><li>手持ちがない、または置けない場合はパス。両者が置けなくなったら駒が多い方の勝ち。</li><li>ランク対戦は1手120秒。時間切れ・投了は負け。ルールを開いている間も対局時計は進みます。</li></ul></dialog>
+    <dialog id="result-dialog" class="match-result" aria-labelledby="result-title" aria-describedby="result-reason">
+      <div class="result-light" aria-hidden="true"></div>
+      <div class="result-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="result-content">
+        <div class="result-emblem" aria-hidden="true"><i class="disc white"></i><i class="disc black"></i><i class="disc black"></i><i class="disc white"></i></div>
+        <p id="result-label" class="result-label"></p>
+        <h2 id="result-title"></h2>
+        <p id="result-reason"></p>
+        <div class="result-score" aria-label="最終の駒数"><span><i class="disc black" aria-hidden="true"></i>黒 <b id="result-black"></b></span><span class="score-divider">:</span><span><b id="result-white"></b> 白<i class="disc white" aria-hidden="true"></i></span></div>
+        <div class="result-rating"><span>レート</span><strong id="result-rating"></strong><b id="result-delta"></b></div>
+        <div class="result-actions"><button id="result-top" class="primary" autofocus>TOPへ戻る</button><button id="result-close" class="quiet">盤面を見る</button></div>
+      </div>
+    </dialog>
     <aside class="site-banner menu-banner" aria-label="広告">
       <a href="https://jardin-redi.com/" target="_blank" rel="noopener noreferrer" aria-label="ジャルダン代々木下原（新しいタブで開く）">
         <span class="banner-art"><img src="assets/jardin-banner.webp?v=3dd43b96ad53" alt="ジャルダン代々木下原の建物外観と物件案内" width="1240" height="649" loading="lazy" decoding="async"></span>

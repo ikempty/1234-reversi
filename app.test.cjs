@@ -47,6 +47,34 @@ test('rules can open from TOP and during a game without resetting the board',()=
   ui.click(ui.byId('rules-close'));assert.equal(ui.byId('move-count').textContent,moves);
   assert.equal(ui.byId('game-screen').hidden,false);
 });
+test('rules appear on page entry once, not on return to TOP',()=>{
+  const ui=setup();assert.equal(ui.byId('rules-dialog').open,true);
+  ui.click(ui.byId('rules-close'));ui.startCPU();ui.click(ui.byId('back-top'));
+  assert.equal(ui.byId('rules-dialog').open,false);
+  ui.click(ui.byId('rules-open'));assert.equal(ui.byId('rules-dialog').open,true);
+});
+test('ranked win, loss and draw show one result per match with server rating',()=>{
+  for(const [winner,title,delta,kind] of [[1,'あなたの勝ち',12,'win'],[2,'あなたの負け',-12,'loss'],[0,'引き分け',0,'draw']]){
+    const ui=setup({configured:true});ui.click(ui.byId('rules-close'));
+    ui.byId('nickname').value='Player';ui.click(ui.byId('mode-online'));
+    const client=ui.clients[0];client.emit({type:'connection',ready:true});
+    const match={id:'match',state:game.initialState(),color:1,black:{nickname:'Player',rating:1500},white:{nickname:'Opponent',rating:1500},deadline:Date.now()+120000};
+    const snapshot={type:'snapshot',profile:{rating:1500},queued:false,match,serverTime:Date.now()};
+    client.emit(snapshot);assert.ok(!ui.byId('result-dialog').open);
+    ui.click(ui.byId('rules-open'));
+    const ended={...snapshot,profile:{rating:1500+delta},match:{...match,state:{...match.state,over:true},winner,delta,reason:'normal'}};
+    client.emit(ended);
+    assert.equal(ui.byId('rules-dialog').open,false);assert.equal(ui.byId('result-dialog').open,true);
+    assert.equal(ui.byId('result-title').textContent,title);assert.equal(ui.byId('result-dialog').className,'match-result result-'+kind);
+    assert.equal(ui.byId('result-rating').textContent,`1500 → ${1500+delta}`);
+    assert.equal(ui.byId('result-delta').textContent,`${delta>=0?'+':''}${delta}`);
+    ui.click(ui.byId('result-close'));client.emit(ended);
+    assert.equal(ui.byId('result-dialog').open,false);
+    ui.click(ui.byId('back-top'));assert.equal(ui.byId('rules-dialog').open,false);
+    // A stale completed match received when matching again must not open a result.
+    ui.click(ui.byId('mode-online'));client.emit(ended);assert.equal(ui.byId('result-dialog').open,false);
+  }
+});
 test('TOP opens first, then CPU level selection, then the game',()=>{
   const ui=setup();assert.equal(ui.byId('top-screen').hidden,false);assert.equal(ui.byId('game-screen').hidden,true);
   assert.equal(ui.byId('board').children[19].disabled,true);

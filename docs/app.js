@@ -7,6 +7,7 @@ let screen='top',mode=null,level=3,thinking=false,worker=null,cpuTimer=null,job=
 let navigation=0;
 let profileRequest=0;
 let online=null,connecting=false,pending=false,serverOffset=0,pendingTimer=null;
+const shownResults=new Set();
 const configured=!!window.REVERSI_ONLINE_URL;
 const ranked=new RankedClient(window.REVERSI_ONLINE_URL||'',onOnline);
 const boardButtons=[],builderButtons=[];
@@ -203,13 +204,35 @@ function chooseMode(next){
 }
 $('mode-cpu').addEventListener('click',()=>chooseMode('cpu'));
 $('mode-online').addEventListener('click',()=>chooseMode('online'));
-$('back-top').addEventListener('click',()=>{
+function returnToTop(){
   if(onlineActive())return;
   if(screen==='game'&&mode==='cpu'&&state.moves&&!state.over&&!confirm('CPU対戦を終了してTOPへ戻りますか？'))return;
   navigation++;stopCPU();ranked.close();online=null;connecting=false;pending=false;clearTimeout(pendingTimer);
   mode=null;screen='top';$('leaderboard').hidden=true;$('online-status').textContent='';newGame();$('mode-cpu').focus();
   refreshTopProfile();
-});
+}
+$('back-top').addEventListener('click',returnToTop);
+$('result-top').addEventListener('click',()=>{$('result-dialog').close();returnToTop();});
+$('result-close').addEventListener('click',()=>$('result-dialog').close());
+$('result-dialog').addEventListener('close',()=>{if(screen==='game')$('back-top').focus();});
+function showRankedResult(){
+  const match=online?.match;
+  if(mode!=='online'||screen!=='game'||!match?.state.over||shownResults.has(match.id))return;
+  shownResults.add(match.id);
+  const outcome=match.winner===0?'draw':match.winner===match.color?'win':'loss';
+  const counts=game.score(match.state),delta=match.delta,rating=online.profile.rating;
+  const dialog=$('result-dialog');
+  dialog.className='match-result result-'+outcome;
+  $('result-label').textContent={win:'VICTORY',loss:'DEFEAT',draw:'DRAW'}[outcome];
+  $('result-title').textContent={win:'あなたの勝ち',loss:'あなたの負け',draw:'引き分け'}[outcome];
+  $('result-reason').textContent=match.reason==='resign'?'投了により決着':match.reason==='timeout'?'時間切れにより決着':'対局終了';
+  $('result-black').textContent=String(counts[1]);$('result-white').textContent=String(counts[2]);
+  $('result-rating').textContent=delta==null?String(rating):`${rating-delta} → ${rating}`;
+  $('result-delta').textContent=delta==null?'':`${delta>=0?'+':''}${delta}`;
+  if($('rules-dialog').open)$('rules-dialog').close();
+  if(dialog.open)dialog.close();
+  dialog.showModal();
+}
 async function refreshTopProfile(){
   const request=++profileRequest;
   if(!configured){$('top-rating').textContent='レート —';return;}
@@ -290,9 +313,11 @@ function onOnline(event){
     showRankings($('leaderboard'),event.players);
   }
   render();
+  showRankedResult();
 }
 try{$('nickname').value=localStorage.getItem('1234-nickname')||'';}catch{}
 setInterval(()=>{if(onlineActive())renderTurn();},500);
 window.addEventListener('beforeunload',event=>{if(onlineActive()){event.preventDefault();event.returnValue='';}});
 render();
 refreshTopProfile();
+$('rules-dialog').showModal();

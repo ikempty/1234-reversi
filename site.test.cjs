@@ -6,7 +6,7 @@ const vm=require('node:vm');
 test('published TOP loads current scripts despite cached older files and shows rating and rankings',async()=>{
   const html=fs.readFileSync('docs/index.html','utf8');
   const nodes=new Map(),requests=[];
-  function element(){return {children:[],events:{},textContent:'',value:'',hidden:false,disabled:false,classList:{toggle(){}},focus(){},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
+  function element(){return {children:[],events:{},textContent:'',value:'',hidden:false,disabled:false,classList:{toggle(){}},focus(){},showModal(){this.open=true;},close(){this.open=false;},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
   for(const [,id]of html.matchAll(/\bid="([^"]+)"/g))nodes.set(id,element());
   const context=vm.createContext({URL,AbortSignal,document:{getElementById:id=>nodes.get(id)||null,createElement:element},location:{protocol:'https:'},localStorage:{getItem:key=>key==='1234-player-token'?'a'.repeat(64):'Player'},addEventListener(){},setInterval:()=>0,clearInterval(){},setTimeout,clearTimeout,
     fetch:async(url)=>{
