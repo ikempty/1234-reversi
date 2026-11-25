@@ -93,7 +93,7 @@ test('CPU posts use the selected level and final outcome, and clear for a new ga
     assert.equal(ui.byId('game-share').hidden,false);
     const url=new URL(ui.byId('game-share').href);
     assert.equal(url.origin,'https://x.com');assert.equal(url.pathname,'/intent/tweet');
-    assert.equal(url.searchParams.get('url'),'https://x.com/ikempty2/status/2096434947267703185');
+    assert.equal(url.searchParams.has('url'),false);
     assert.equal(url.searchParams.get('text'),headline+suffix);
     ui.click(ui.byId('back-top'));assert.equal(ui.byId('game-share').hidden,true);
     ui.startCPU(1);assert.equal(ui.byId('game-share').href,'');
@@ -109,7 +109,7 @@ test('ranked posts use authoritative outcomes for either color and actual rating
     client.emit(event);assert.equal(ui.byId('game-share').hidden,true);
     client.emit({...event,profile:{rating},match:{...match,state:{...match.state,over:true},winner,delta,reason:'resign'}});
     const postURL=new URL(ui.byId('result-share').href);
-    assert.equal(postURL.searchParams.get('url'),'https://x.com/ikempty2/status/2096434947267703185');
+    assert.equal(postURL.searchParams.has('url'),false);
     const text=postURL.searchParams.get('text');
     assert.equal(text,`1234リバーシのランクマッチで${result}！レート：${rating}（${delta>=0?'+':''}${delta}）\n1〜4個の駒を組み合わせる、新しいリバーシ。\nhttps://1234reversi.com/\n#1234リバーシ`);
     assert.equal(ui.byId('game-share').href,ui.byId('result-share').href);

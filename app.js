@@ -2,7 +2,6 @@
 const game=Reversi;
 const $=id=>document.getElementById(id);
 const names={1:'黒',2:'白'};
-const QUOTED_POST_URL='https://x.com/ikempty2/status/2096434947267703185';
 let state=game.initialState(),shape=[[0,0]],selected=null,hover=null,history=[],legal=[];
 let screen='top',mode=null,level=3,thinking=false,worker=null,cpuTimer=null,job=0;
 let navigation=0;
@@ -90,7 +89,7 @@ function renderResultShare(){
   const text=resultPostText();
   for(const id of ['game-share','result-share']){
     $(id).hidden=!text;
-    $(id).href=text?'https://x.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(QUOTED_POST_URL):'';
+    $(id).href=text?'https://x.com/intent/tweet?text='+encodeURIComponent(text):'';
   }
 }
 function renderTurn(){
