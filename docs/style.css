@@ -29,4 +29,14 @@ main{width:min(1120px,100% - 64px);margin:auto;padding:0 0 max(20px,env(safe-are
 @keyframes result-reveal{from{opacity:0;transform:translateY(30px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes result-title{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes result-stone{from{opacity:0;transform:translateY(-20px) rotateY(100deg)}to{opacity:1;transform:translateY(0) rotateY(0)}}@keyframes result-ring{from{opacity:0;transform:scale(.5)}40%{opacity:1}to{opacity:0;transform:scale(1.6)}}@keyframes result-spark{from{opacity:0;transform:rotate(var(--angle)) translateY(-35px) scale(.3)}25%{opacity:1}to{opacity:0;transform:rotate(var(--angle)) translateY(-170px) scale(.5)}}
 @media(max-width:500px){.match-result{padding:28px 20px 18px}.match-result h2{font-size:34px}.result-emblem{width:64px;margin-bottom:18px}.result-rating{gap:9px}.result-rating strong{font-size:18px}}
 @media(prefers-reduced-motion:reduce){.match-result[open],.match-result *,.match-result *:after{animation:none!important}.result-particles,.result-light:after{display:none}}
-.rules-list .rule-description{display:grid;grid-template-columns:max-content minmax(0,1fr)}.rules-list strong{font-weight:700}.rule-continuation{display:block;margin-top:.5em}
+/* Give every rule the same reading edge, including wrapped lines. */
+#rules-dialog{width:min(560px,calc(100% - 32px));padding:0;scroll-padding-top:88px}
+#rules-dialog .rules-heading{position:sticky;top:0;z-index:1;padding:18px 28px 14px;background:#102b21}
+#rules-dialog .rules-list{list-style:none;margin:0;padding:4px 28px 28px;font-size:15px;line-height:1.75}
+#rules-dialog .rules-list li{margin:0;padding:0}
+#rules-dialog .rules-list li+li{margin-top:20px}
+.rules-list .rule-description{display:block}
+.rules-list strong{display:block;margin-bottom:5px;color:var(--gold);font-size:13px;font-weight:600;letter-spacing:.08em}
+.rules-list .rule-description>div{font-weight:400}
+.rule-continuation{display:block;margin-top:.6em}
+@media(max-width:500px){#rules-dialog .rules-heading{padding:14px 20px 10px}#rules-dialog .rules-list{padding:4px 20px 24px}#rules-dialog .rules-list li+li{margin-top:16px}}
