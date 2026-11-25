@@ -83,6 +83,37 @@ test('TOP opens first, then CPU level selection, then the game',()=>{
   ui.click(ui.byId('level-choices').children[9]);assert.equal(ui.byId('level-screen').hidden,true);assert.equal(ui.byId('game-screen').hidden,false);
   assert.equal(ui.byId('white-name').textContent,'CPU Lv.10');
 });
+
+test('CPU posts use the selected level and final outcome, and clear for a new game',()=>{
+  const suffix='\n1〜4個の駒を組み合わせる、新しいリバーシ。\nhttps://1234reversi.com/\n#1234リバーシ';
+  for(const [color,headline] of [[1,'レベル10に勝利！'],[2,'レベル10に敗北！'],[0,'レベル10と引き分け！']]){
+    const ui=setup();assert.equal(ui.byId('game-share').hidden,true);ui.startCPU(10);
+    assert.equal(ui.byId('game-share').hidden,true);
+    vm.runInContext(`state.board=Array.from({length:8},(_,r)=>Array(8).fill(${color}||r%2+1));state.over=true;render();`,ui.context);
+    assert.equal(ui.byId('game-share').hidden,false);
+    const url=new URL(ui.byId('game-share').href);
+    assert.equal(url.origin,'https://x.com');assert.equal(url.pathname,'/intent/tweet');
+    assert.equal(url.searchParams.get('text'),headline+suffix);
+    ui.click(ui.byId('back-top'));assert.equal(ui.byId('game-share').hidden,true);
+    ui.startCPU(1);assert.equal(ui.byId('game-share').href,'');
+  }
+});
+
+test('ranked posts use authoritative outcomes for either color and actual rating changes',()=>{
+  for(const [color,winner,rating,delta,result] of [[1,1,1582,16,'勝利'],[2,2,1582,16,'勝利'],[2,1,1468,-16,'敗北'],[1,0,1500,0,'引き分け']]){
+    const ui=setup({configured:true});ui.byId('nickname').value='Private player';ui.click(ui.byId('mode-online'));
+    const client=ui.clients[0];client.emit({type:'connection',ready:true});
+    const match={id:'private-match-id',state:game.initialState(),color,black:{nickname:'Black'},white:{nickname:'White'}};
+    const event={type:'snapshot',profile:{rating:1500},queued:false,match,serverTime:Date.now()};
+    client.emit(event);assert.equal(ui.byId('game-share').hidden,true);
+    client.emit({...event,profile:{rating},match:{...match,state:{...match.state,over:true},winner,delta,reason:'resign'}});
+    const text=new URL(ui.byId('result-share').href).searchParams.get('text');
+    assert.equal(text,`1234リバーシのランクマッチで${result}！レート：${rating}（${delta>=0?'+':''}${delta}）\n1〜4個の駒を組み合わせる、新しいリバーシ。\nhttps://1234reversi.com/\n#1234リバーシ`);
+    assert.equal(ui.byId('game-share').href,ui.byId('result-share').href);
+    assert.equal(ui.byId('result-share').hidden,false);
+    ui.click(ui.byId('result-top'));assert.equal(ui.byId('result-share').hidden,true);
+  }
+});
 test('TOP loads the saved rating without connecting or queuing',async()=>{
   const ui=setup({configured:true,profile:{rating:1632}});
   await new Promise(resolve=>setImmediate(resolve));

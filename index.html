@@ -60,7 +60,7 @@
       <div class="scores"><div id="black-score" class="score"><i class="disc black"></i><div><span id="black-name">あなた</span><small id="black-rating" class="player-rating" hidden></small><strong id="black-count">2</strong><small>残り <b id="black-stock">30</b></small></div></div><div id="turn" class="turn" aria-live="polite" tabindex="-1"></div><div id="white-score" class="score"><i class="disc white"></i><div><span id="white-name">CPU</span><small id="white-rating" class="player-rating" hidden></small><strong id="white-count">2</strong><small>残り <b id="white-stock">30</b></small></div></div></div>
     <section class="workbench" aria-label="駒の合体と配置">
       <div id="builder" class="builder" aria-label="2×2の合体スペース"></div>
-      <div class="actions"><button id="place" class="primary" disabled>置く</button><button id="resign" class="quiet" hidden>投了</button><button id="undo" class="quiet" disabled>戻す</button></div>
+      <div class="actions"><button id="place" class="primary" disabled>置く</button><button id="resign" class="quiet" hidden>投了</button><button id="undo" class="quiet" disabled>戻す</button><a id="game-share" class="post-result" target="_blank" rel="noopener noreferrer" aria-label="結果をXにポスト（新しいタブで開く）" hidden><span aria-hidden="true">𝕏</span> 結果をポスト</a></div>
     </section>
     <p id="status" class="notice" role="status" hidden></p>
     </div>
@@ -98,7 +98,7 @@
         <p id="result-reason"></p>
         <div class="result-score" aria-label="最終の駒数"><span><i class="disc black" aria-hidden="true"></i>黒 <b id="result-black"></b></span><span class="score-divider">:</span><span><b id="result-white"></b> 白<i class="disc white" aria-hidden="true"></i></span></div>
         <div class="result-rating"><span>レート</span><strong id="result-rating"></strong><b id="result-delta"></b></div>
-        <div class="result-actions"><button id="result-top" class="primary" autofocus>TOPへ戻る</button><button id="result-close" class="quiet">盤面を見る</button></div>
+        <div class="result-actions"><button id="result-top" class="primary" autofocus>TOPへ戻る</button><a id="result-share" class="post-result" target="_blank" rel="noopener noreferrer" aria-label="結果をXにポスト（新しいタブで開く）" hidden><span aria-hidden="true">𝕏</span> 結果をポスト</a><button id="result-close" class="quiet">盤面を見る</button></div>
       </div>
     </dialog>
     <aside class="site-banner menu-banner" aria-label="広告">

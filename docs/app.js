@@ -70,6 +70,28 @@ function renderPlacement(){
   $('place').disabled=!canInteract()||!result;
   $('place').textContent=pending?'送信中…':'置く';
 }
+function resultPostText(){
+  if(screen!=='game'||!state.over)return '';
+  let headline;
+  if(mode==='online'){
+    const match=online?.match,rating=online?.profile?.rating;
+    if(!match?.state.over||!Number.isFinite(rating))return '';
+    const result=match.winner===0?'引き分け':match.winner===match.color?'勝利':'敗北';
+    const delta=Number.isFinite(match.delta)?`（${match.delta>=0?'+':''}${match.delta}）`:'';
+    headline=`1234リバーシのランクマッチで${result}！レート：${rating}${delta}`;
+  }else if(mode==='cpu'){
+    const counts=game.score(state);
+    headline=counts[1]===counts[2]?`レベル${level}と引き分け！`:`レベル${level}に${counts[1]>counts[2]?'勝利':'敗北'}！`;
+  }else return '';
+  return `${headline}\n1〜4個の駒を組み合わせる、新しいリバーシ。\nhttps://1234reversi.com/\n#1234リバーシ`;
+}
+function renderResultShare(){
+  const text=resultPostText();
+  for(const id of ['game-share','result-share']){
+    $(id).hidden=!text;
+    $(id).href=text?'https://x.com/intent/tweet?text='+encodeURIComponent(text):'';
+  }
+}
 function renderTurn(){
   let text;
   if(mode==='online'&&!online?.match)text=online?.queued?'対戦待ち':'—';
@@ -118,6 +140,8 @@ function render(){
     button.setAttribute('aria-pressed',String(!!filled));button.disabled=!canInteract();
   }
   $('undo').hidden=mode!=='cpu';$('undo').disabled=state.over||!history.length;
+  $('place').hidden=state.over;
+  if(state.over)$('undo').hidden=true;
   $('resign').hidden=screen!=='game'||!onlineActive();
   $('resign').disabled=!ranked.ready||connecting||pending;
   $('match').disabled=!configured||connecting;
@@ -130,7 +154,7 @@ function render(){
   const delta=online?.match?.delta;
   $('rating').hidden=screen==='game'&&!state.over;
   $('rating').textContent=online?.profile?`レート ${online.profile.rating}${delta!=null?` (${delta>=0?'+':''}${delta})`:''}`:'レート —';
-  renderTurn();renderBoard();renderPlacement();
+  renderTurn();renderBoard();renderPlacement();renderResultShare();
 }
 function stopCPU(){job++;clearTimeout(cpuTimer);if(worker){worker.terminate();worker=null;}thinking=false;}
 function scheduleCPU(){
