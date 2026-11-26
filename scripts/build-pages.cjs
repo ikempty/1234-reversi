@@ -6,7 +6,7 @@ const destination=path.join(root,'docs');
 fs.mkdirSync(destination,{recursive:true});
 fs.mkdirSync(path.join(destination,'assets'),{recursive:true});
 for(const asset of ['jardin-banner.webp','brand-logo.png'])fs.copyFileSync(path.join(root,'assets',asset),path.join(destination,'assets',asset));
-for(const file of ['CNAME','index.html','style.css','engine.js','app.js','ai.js','ai-worker.js','online.js','online-config.js','nickname-policy.js']){
+for(const file of ['CNAME','index.html','style.css','engine.js','app.js','ai.js','ai-worker.js','online.js','online-config.js','nickname-policy.js','presence.js']){
   fs.copyFileSync(path.join(root,file),path.join(destination,file));
 }
 fs.writeFileSync(path.join(destination,'.nojekyll'),'');

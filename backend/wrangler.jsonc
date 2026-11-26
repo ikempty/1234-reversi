@@ -9,8 +9,8 @@
     "ALLOWED_ORIGINS": "https://1234reversi.com,https://www.1234reversi.com,https://ikempty.github.io"
   },
   "durable_objects": {
-    "bindings": [{"name": "RANKED", "class_name": "RankedLobby"}]
+    "bindings": [{"name": "RANKED", "class_name": "RankedLobby"},{"name": "PRESENCE", "class_name": "PresenceLobby"}]
   },
-  "migrations": [{"tag": "v1", "new_sqlite_classes": ["RankedLobby"]}],
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["RankedLobby"]},{"tag":"v2","new_sqlite_classes":["PresenceLobby"]}],
   "observability": {"enabled": false}
 }

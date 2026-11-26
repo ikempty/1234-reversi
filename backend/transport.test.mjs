@@ -9,7 +9,7 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
     name:'ranked-test',modules:true,scriptPath:fileURLToPath(new URL('./.worker-build/worker.js',import.meta.url)),
     compatibilityDate:'2026-11-24',
     bindings:{RANKED_ENABLED:'true',ALLOWED_ORIGINS:'http://127.0.0.1:4173'},
-    durableObjects:{RANKED:{className:'RankedLobby',useSQLite:true}}
+    durableObjects:{RANKED:{className:'RankedLobby',useSQLite:true},PRESENCE:{className:'PresenceLobby',useSQLite:true}}
   }]}));
   const sockets=[];
   const headers={Origin:'http://127.0.0.1:4173'};
@@ -36,6 +36,23 @@ test('two real WebSocket clients match, play, reconnect and settle Elo once', {t
     return {socket,next,send:data=>socket.send(JSON.stringify(data))};
   }
   try{
+    async function visitor(id){
+      const response=await mf.dispatchFetch('http://localhost/presence',{headers:{...headers,Upgrade:'websocket','Sec-WebSocket-Protocol':'presence.'+id.repeat(32)}});
+      assert.equal(response.status,101);
+      const socket=response.webSocket;sockets.push(socket);
+      let latest=-1;
+      socket.addEventListener('message',event=>{latest=JSON.parse(event.data).count;});socket.accept();
+      async function count(expected){for(let i=0;i<100;i++){if(latest===expected)return;await new Promise(r=>setTimeout(r,10));}assert.equal(latest,expected);}
+      return {socket,count};
+    }
+    const p1=await visitor('1');await p1.count(1);
+    const p1tab=await visitor('1');await p1tab.count(1);await p1.count(1);
+    const p2=await visitor('2');await p2.count(2);await p1.count(2);
+    p1tab.socket.close(1000);await p1.count(2);
+    p2.socket.close(1000);await p1.count(1);
+    p1.socket.close(1000);
+    const invalidPresence=await mf.dispatchFetch('http://localhost/presence',{headers:{...headers,Upgrade:'websocket','Sec-WebSocket-Protocol':'presence.invalid'}});assert.equal(invalidPresence.status,400);
+    const deniedPresence=await mf.dispatchFetch('http://localhost/presence',{headers:{Origin:'https://untrusted.example',Upgrade:'websocket','Sec-WebSocket-Protocol':'presence.'+'1'.repeat(32)}});assert.equal(deniedPresence.status,403);
     for(const body of ['null','[]','{bad json']){
       const invalid=await mf.dispatchFetch('http://localhost/session',{method:'POST',headers:{...headers,Authorization:'Bearer '+'d'.repeat(64)},body});
       assert.equal(invalid.status,400);assert.equal((await invalid.json()).error,'入力内容が不正です。');

@@ -14,6 +14,7 @@
   <script src="engine.js" defer></script>
   <script src="ai.js" defer></script>
   <script src="online-config.js" defer></script>
+  <script src="presence.js" defer></script>
   <script src="nickname-policy.js" defer></script>
   <script src="online.js" defer></script>
   <script src="app.js" defer></script>
@@ -22,7 +23,7 @@
   <main id="app" class="menu-view">
     <header class="site-header">
       <div class="brand-lockup" aria-label="1234リバーシ"><img src="assets/brand-logo.png" alt="" width="44" height="44"><span><b>1234</b><small>リバーシ</small></span></div>
-      <nav aria-label="ゲームメニュー"><button id="back-top" class="quiet" hidden>TOPへ戻る</button><button id="top-ranking" class="quiet">ランキング</button><button id="rules-open" class="quiet" aria-haspopup="dialog">ルール</button></nav>
+      <nav aria-label="ゲームメニュー"><button id="back-top" class="quiet" hidden>TOPへ戻る</button><span id="online-count" class="online-count">オンライン —</span><button id="top-ranking" class="quiet">ランキング</button><button id="rules-open" class="quiet" aria-haspopup="dialog">ルール</button></nav>
     </header>
     <section id="top-screen" class="hero" aria-label="TOP画面">
       <div class="hero-art" aria-hidden="true"><div class="logo-stage"><img src="assets/brand-logo.png" alt="" width="1254" height="1254" fetchpriority="high"></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div></div>

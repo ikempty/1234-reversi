@@ -114,6 +114,7 @@ function render(){
   $('ranking-screen').hidden=screen!=='ranking';
   $('top-ranking').disabled=!configured;
   $('top-ranking').hidden=screen!=='top';
+  $('online-count').hidden=screen!=='top';
   $('game-screen').hidden=screen!=='game';
   $('online-options').hidden=mode!=='online';
   $('matching-view').hidden=screen!=='matching';

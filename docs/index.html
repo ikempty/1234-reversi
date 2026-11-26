@@ -8,21 +8,22 @@
   <meta name="theme-color" content="#071e18">
   <meta name="description" content="1から4、つなげて変わるリバーシ。CPU対戦とレート付きランダムマッチ。">
   <title>1234リバーシ</title>
-  <link rel="stylesheet" href="style.css?v=13f10c163475">
+  <link rel="stylesheet" href="style.css?v=81a8c36af0c9">
   <link rel="icon" type="image/png" href="assets/brand-logo.png?v=5584c6843039">
   <link rel="apple-touch-icon" href="assets/brand-logo.png?v=5584c6843039">
   <script src="engine.js?v=9d3b081cb389" defer></script>
   <script src="ai.js?v=ab6164aacc88" defer></script>
   <script src="online-config.js?v=88dcc0edae18" defer></script>
+  <script src="presence.js?v=2e64f5be51df" defer></script>
   <script src="nickname-policy.js?v=ee0c9ff96834" defer></script>
   <script src="online.js?v=0425e7fe9a9c" defer></script>
-  <script src="app.js?v=bee2cb98fe7e" defer></script>
+  <script src="app.js?v=769078d47bf6" defer></script>
 </head>
 <body>
   <main id="app" class="menu-view">
     <header class="site-header">
       <div class="brand-lockup" aria-label="1234リバーシ"><img src="assets/brand-logo.png?v=5584c6843039" alt="" width="44" height="44"><span><b>1234</b><small>リバーシ</small></span></div>
-      <nav aria-label="ゲームメニュー"><button id="back-top" class="quiet" hidden>TOPへ戻る</button><button id="top-ranking" class="quiet">ランキング</button><button id="rules-open" class="quiet" aria-haspopup="dialog">ルール</button></nav>
+      <nav aria-label="ゲームメニュー"><button id="back-top" class="quiet" hidden>TOPへ戻る</button><span id="online-count" class="online-count">オンライン —</span><button id="top-ranking" class="quiet">ランキング</button><button id="rules-open" class="quiet" aria-haspopup="dialog">ルール</button></nav>
     </header>
     <section id="top-screen" class="hero" aria-label="TOP画面">
       <div class="hero-art" aria-hidden="true"><div class="logo-stage"><img src="assets/brand-logo.png?v=5584c6843039" alt="" width="1254" height="1254" fetchpriority="high"></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div></div>

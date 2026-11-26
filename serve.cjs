@@ -4,6 +4,7 @@ const path=require('node:path');
 const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/engine.js':'engine.js','/app.js':'app.js','/ai.js':'ai.js','/ai-worker.js':'ai-worker.js','/online.js':'online.js','/online-config.js':'online-config.js'};
 files['/assets/brand-logo.png']='assets/brand-logo.png';
 files['/nickname-policy.js']='nickname-policy.js';
+files['/presence.js']='presence.js';
 files['/assets/jardin-banner.webp']='assets/jardin-banner.webp';
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.webp':'image/webp','.png':'image/png'};
 const server=http.createServer((req,res)=>{

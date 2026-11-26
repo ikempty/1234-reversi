@@ -1,5 +1,6 @@
 import {DurableObject} from 'cloudflare:workers';
 import {RankedStore,ClientError} from './store.mjs';
+export {PresenceLobby} from './presence.mjs';
 
 // User-requested one-time reset. The database marker prevents repeat resets on deploy/restart.
 const RANKING_RESET_ID='2026-11-25-ranking-reset-1';
@@ -33,10 +34,10 @@ export default {
     if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
     if(env.RANKED_ENABLED!=='true')return json({error:'オンライン対戦は準備中です。'},503,headers);
     const url=new URL(request.url);
-    if(!['/session','/connect','/profile','/ranking'].includes(url.pathname))return json({error:'Not found'},404,headers);
+    if(!['/session','/connect','/profile','/ranking','/presence'].includes(url.pathname))return json({error:'Not found'},404,headers);
     if(Number(request.headers.get('Content-Length'))>2048)return json({error:'リクエストが大きすぎます。'},413,headers);
     try{
-      const response=await env.RANKED.getByName('ranked-v1').fetch(request);
+      const response=await (url.pathname==='/presence'?env.PRESENCE.getByName('visitors-v1'):env.RANKED.getByName('ranked-v1')).fetch(request);
       if(response.status===101)return response;
       const result=new Response(response.body,{status:response.status,headers:response.headers});
       for(const [key,value]of Object.entries(headers))result.headers.set(key,value);

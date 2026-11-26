@@ -12,6 +12,8 @@ main{width:min(1120px,100% - 64px);margin:auto;padding:0 0 max(20px,env(safe-are
 @media(max-width:390px){main{width:calc(100% - 24px)}.site-header{height:64px}.hero{padding-top:6px;gap:18px}.hero-art{width:168px}.title-numbers{font-size:56px}.title-jp{font-size:20px}.mode-choices button{padding:16px 0}.mode-choices button span{font-size:18px}.workbench{gap:25px}.builder{width:120px}.actions{width:140px}.score>.disc{width:19px}.score span{font-size:12px}.turn{font-size:12px}.score small{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
+.online-count{color:var(--gold);font-size:14px;font-weight:400;font-variant-numeric:tabular-nums;white-space:nowrap}.site-header nav{flex-wrap:wrap;justify-content:flex-end}.site-header nav .quiet{white-space:nowrap}
+@media(max-width:370px){.site-header{gap:8px}.site-header nav{gap:4px}.site-header nav .quiet{padding-left:5px;padding-right:5px}}
 .score>.disc{align-self:flex-start;height:auto;flex-shrink:0}
 
 /* Player identity is an input area, distinct from the match actions. */

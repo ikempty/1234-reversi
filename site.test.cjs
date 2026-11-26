@@ -8,7 +8,7 @@ test('published TOP loads current scripts despite cached older files and shows r
   const nodes=new Map(),requests=[];
   function element(){return {children:[],events:{},textContent:'',value:'',hidden:false,disabled:false,classList:{toggle(){}},focus(){},showModal(){this.open=true;},close(){this.open=false;},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
   for(const [,id]of html.matchAll(/\bid="([^"]+)"/g))nodes.set(id,element());
-  const context=vm.createContext({URL,AbortSignal,document:{getElementById:id=>nodes.get(id)||null,createElement:element},location:{protocol:'https:'},localStorage:{getItem:key=>key==='1234-player-token'?'a'.repeat(64):'Player'},addEventListener(){},setInterval:()=>0,clearInterval(){},setTimeout,clearTimeout,
+  const context=vm.createContext({URL,AbortSignal,crypto:require('node:crypto').webcrypto,WebSocket:class{close(){}},document:{getElementById:id=>nodes.get(id)||null,createElement:element,addEventListener(){}},location:{protocol:'https:'},localStorage:{getItem:key=>key==='1234-player-token'?'a'.repeat(64):'Player',setItem(){}},addEventListener(){},setInterval:()=>0,clearInterval(){},setTimeout,clearTimeout,
     fetch:async(url)=>{
       requests.push(url);
       if(url.endsWith('/profile'))return {ok:true,json:async()=>({rating:1678})};
